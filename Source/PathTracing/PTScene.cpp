@@ -1,9 +1,9 @@
 #include "PTScene.h"
 #include "CommonShape.h"
 #include "PTRandom.h"
-#include "PTImagePNG.h"
 #include <Eigen/Dense>
 #include <ppl.h>
+#include <fstream>
 
 namespace PTMain
 {
@@ -146,15 +146,36 @@ namespace PTMain
 			return int(pow(x > 1.0f ? 1.0f : (x < 0.0f ? 0.0f : x), 1.0f / 2.2f) * 255.0f + 0.5f);
 		};
 
-		std::vector<pixel_t> pngDatas(pixels.size());
+        {
+            using namespace std;
+            ofstream ofs("output.ppm", ios_base::out | ios_base::binary);
+            ofs << "P6" << endl << width << ' ' << height << endl << "255" << endl;
+
+            for (auto j = 0u; j < height; ++j)
+            {
+                for (auto i = 0u; i < width; ++i)
+                {
+                    const Eigen::Vector3f& Pixel = pixels[j * width + i];
+                    ofs << (char) (toInt(Pixel.x()) % 256)
+                    << (char) (toInt(Pixel.y()) % 256)
+                    << (char) (toInt(Pixel.z()) % 256);       // red, green, blue
+                }
+            }
+
+            ofs.close();
+        }
+
+
+		/*std::vector<pixel_t> pngDatas(pixels.size());
 		for (size_t i = 0; i < pixels.size(); ++i)
 		{
 			pngDatas[i].red = toInt(pixels[i].x());
 			pngDatas[i].green = toInt(pixels[i].y());
 			pngDatas[i].blue = toInt(pixels[i].z());
-		}
+		}*/
 
-		ExportToPNG(width, height, pngDatas.data(), "./result.png");
+		// Use method to export png file
+		//ExportToPNG(width, height, pngDatas.data(), "./result.png");
 	}
 
 	Eigen::Vector3f PTScene::Radiance(const PT::Ray& ray, int depth)
