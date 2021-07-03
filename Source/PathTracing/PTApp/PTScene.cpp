@@ -113,8 +113,8 @@ namespace PTMain
 
 	void PTScene::DoPathTracing(int width, int height, int sampleCount)
 	{
-        PT::PTVector3d cx = { width * 0.5135f / height, 0.0f, 0.0f };
-        PT::PTVector3d cy = 0.5135f * cx.cross(Camera->Dir.cast<double>()).normalized();
+        PT::PTVector3f cx = { width * 0.5135f / height, 0.0f, 0.0f };
+        PT::PTVector3f cy = 0.5135f * cx.cross(Camera->Dir).normalized();
 
 		std::vector<Eigen::Vector3f> pixels(width * height);
 
@@ -130,7 +130,7 @@ namespace PTMain
 				{
 					PT::Ray ray;
 					ray.Direction = (cx * ((x + PT::PTRandom<float>::Generate01()) / width - 0.5f)
-						+ cy * ((y + PT::PTRandom<float>::Generate01()) / height - 0.5f)).cast<float>()
+						+ cy * ((y + PT::PTRandom<float>::Generate01()) / height - 0.5f))
 						+ Camera->Dir;
 					ray.Direction.normalize();
 					ray.Origin = Camera->Pos + ray.Direction * 140.0f;
