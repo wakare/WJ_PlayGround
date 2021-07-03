@@ -1,9 +1,13 @@
 #include "PTScene.h"
-#include "CommonShape.h"
-#include "PTRandom.h"
 #include <Eigen/Dense>
 #include <ppl.h>
 #include <fstream>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+#include "CommonShape.h"
+#include "PTRandom.h"
 
 namespace PTMain
 {
@@ -140,30 +144,24 @@ namespace PTMain
 				pixel /= sampleCount;
 			}
 		});
-		
-		static auto toInt = [](float x)
-		{
-			return int(pow(x > 1.0f ? 1.0f : (x < 0.0f ? 0.0f : x), 1.0f / 2.2f) * 255.0f + 0.5f);
-		};
 
+        static auto toInt = [](float x)
         {
-            using namespace std;
-            ofstream ofs("output.ppm", ios_base::out | ios_base::binary);
-            ofs << "P6" << endl << width << ' ' << height << endl << "255" << endl;
+            return int(pow(x > 1.0f ? 1.0f : (x < 0.0f ? 0.0f : x), 1.0f / 2.2f) * 255.0f + 0.5f);
+        };
 
-            for (auto j = 0u; j < height; ++j)
-            {
-                for (auto i = 0u; i < width; ++i)
-                {
-                    const Eigen::Vector3f& Pixel = pixels[j * width + i];
-                    ofs << (char) (toInt(Pixel.x()) % 256)
-                    << (char) (toInt(Pixel.y()) % 256)
-                    << (char) (toInt(Pixel.z()) % 256);       // red, green, blue
-                }
-            }
-
-            ofs.close();
+		// Convert to rgb data format
+        char* _rgbdata = (char*) malloc (3 * sizeof(char) * pixels.size());
+        for (int i = 0; i < pixels.size(); ++i)
+        {
+            const Eigen::Vector3f& Pixel = pixels[i];
+            _rgbdata[3 * i] = toInt( Pixel.x());
+            _rgbdata[3 * i + 1] = toInt( Pixel.y());
+            _rgbdata[3 * i + 2] = toInt( Pixel.z());
         }
+
+        stbi_write_png("output.png", width, height, 3, _rgbdata, width * 3);
+        free(_rgbdata);
 	}
 
 	Eigen::Vector3f PTScene::Radiance(const PT::Ray& ray, int depth)
