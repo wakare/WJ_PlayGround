@@ -198,8 +198,8 @@ namespace PTMain
 		}
 
 		bool into = false;
-		const PT::PTVector3d hitNormal = result.HitShape->HitNormal(ray, result, into);
-		const PT::PTVector3d hitPos = ray.Origin + ray.Direction * result.t;
+		const PT::PTVector3f hitNormal = result.HitShape->HitNormal(ray, result, into).cast<float>();
+		const PT::PTVector3f hitPos = (ray.Origin + ray.Direction * result.t).cast<float>();
 		
 		switch (hitObj->GetMaterial().ReflectType)
 		{
@@ -210,36 +210,34 @@ namespace PTMain
 				float r2 = PT::PTRandom<float>::Generate01();
 				float r2s = sqrt(r2);
 
-                PT::PTVector3f w = hitNormal.normalized().cast<float>();
+                PT::PTVector3f w = hitNormal.normalized();
                 PT::PTVector3f u = (fabs(w.x()) > FLT_EPSILON ? PT::PTVector3f{0.0f, 1.0f, 0.0f} : PT::PTVector3f{1.0f, 0.0f, 0.0f})
 					.cross(w).normalized();
                 PT::PTVector3f v = w.cross(u).normalized();
 				
 				PT::Ray diffRay;
-				diffRay.Origin = hitPos;
+				diffRay.Origin = hitPos.cast<double>();
 				diffRay.Direction = (u * cosf(r1) * r2s + v * sinf(r1) * r2s + w * sqrtf(1 - r2)).normalized().cast<double>();
 
-				float test = diffRay.Direction.dot(hitNormal.cast<double>());
+				float test = diffRay.Direction.cast<float>().dot(hitNormal);
 				if (test < -FLT_EPSILON)
 				{
 					assert(false);
 					printf("[ERROR] test >= -FLT_EPSILON");
 				}
-				
-				//// TEST
-				//diffRay.Direction = {0.0f, -1.0f, 0.0f};
 
 				const Eigen::Vector3f result = hitObj->GetMaterial().Emission + Op(diff, Radiance(diffRay, depth + 1));
-				return /*clamp*/(result);
+				return result;
 			}
 			break;
 
 		case PT::EMRT_SPECULAR:
 			{
-				const PT::PTVector3d n = into ? hitNormal : -hitNormal;
-				
+                PT::PTVector3d n = hitNormal.cast<double>();
+                if (!into) n = -n;
+
 				PT::Ray reflRay;
-				reflRay.Origin = hitPos;
+				reflRay.Origin = hitPos.cast<double>();
 				reflRay.Direction = ray.Direction - n.cast<double>() * 2 * n.cast<double>().dot(ray.Direction);
 				reflRay.Direction.normalize();
 				
@@ -249,12 +247,11 @@ namespace PTMain
 
 		case PT::EMRT_REFRACT:
 			{
-				 PT::PTVector3d n = hitNormal.cast<double>();
-				 if (!into) n = -n;
-			//const Eigen::Vector3d n = hitNormal;
+				PT::PTVector3d n = hitNormal.cast<double>();
+				if (!into) n = -n;
 				
 				PT::Ray reflRay;
-				reflRay.Origin = hitPos;
+				reflRay.Origin = hitPos.cast<double>();
 				reflRay.Direction = ray.Direction - n * 2 * n.dot(ray.Direction);
 				reflRay.Direction.normalize();
 
@@ -266,8 +263,8 @@ namespace PTMain
 					return hitObj->GetMaterial().Emission + Op(diff, (Radiance(reflRay, depth + 1)));
 				}
 
-                PT::PTVector3f tdir = (ray.Direction.cast<float>() * nnt - hitNormal.cast<float>() * (ddn * nnt + sqrt(cos2t))).normalized();
-				double a = nt - nc, b = nt + nc, R0 = a * a / (b * b), c = 1 - (into ? -ddn : -tdir.dot(hitNormal.cast<float>()));
+                PT::PTVector3f tdir = (ray.Direction.cast<float>() * nnt - hitNormal * (ddn * nnt + sqrt(cos2t))).normalized();
+				double a = nt - nc, b = nt + nc, R0 = a * a / (b * b), c = 1 - (into ? -ddn : -tdir.dot(hitNormal));
 				double Re = R0 + (1 - R0) * c * c * c * c * c, Tr = 1 - Re, P = 0.25 + 0.5 * Re, RP = Re / P, TP = Tr / (1 - P);
 
 				if (depth > 2)
@@ -279,7 +276,7 @@ namespace PTMain
 					else
 					{
 						PT::Ray tempRay;
-						tempRay.Origin = hitPos;
+						tempRay.Origin = hitPos.cast<double>();
 						tempRay.Direction = tdir.cast<double>();
 						
 						return hitObj->GetMaterial().Emission + Op(diff, (TP * Radiance(tempRay, depth + 1)));
@@ -288,7 +285,7 @@ namespace PTMain
 				else
 				{
 					PT::Ray tempRay;
-					tempRay.Origin = hitPos;
+					tempRay.Origin = hitPos.cast<double>();
 					tempRay.Direction = tdir.cast<double>();
 					
 					return hitObj->GetMaterial().Emission + Op(diff, Re * Radiance(reflRay, depth + 1) + Tr * Radiance(tempRay, depth + 1));

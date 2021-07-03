@@ -25,12 +25,6 @@ namespace PT
 		result.t = ( b - det) > eps ?  b - det : (( b + det) > eps ?  b + det : 0.0);
 		result.bHit = (result.t > 0.0f);
 
-		//const Eigen::Vector3d intersect = ray.Origin + ray.Direction * result.t;
-		//const Eigen::Vector3d n = (intersect - Center).normalized();
-
-		//bool into = n.dot(ray.Direction) < 0;
-		//result.t += (into ? -eps : eps);
-		//result.t -= eps;
 		return result;
 	}
 
