@@ -7,6 +7,7 @@ namespace PT
 	enum MaterialReflectType
 	{
 		EMRT_DIFFUSE,
+		EMRT_GLOSSY,
 		EMRT_SPECULAR,
 		EMRT_REFRACT
 	};

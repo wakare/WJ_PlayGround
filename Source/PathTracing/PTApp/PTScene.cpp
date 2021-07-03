@@ -164,18 +164,6 @@ namespace PTMain
 
             ofs.close();
         }
-
-
-		/*std::vector<pixel_t> pngDatas(pixels.size());
-		for (size_t i = 0; i < pixels.size(); ++i)
-		{
-			pngDatas[i].red = toInt(pixels[i].x());
-			pngDatas[i].green = toInt(pixels[i].y());
-			pngDatas[i].blue = toInt(pixels[i].z());
-		}*/
-
-		// Use method to export png file
-		//ExportToPNG(width, height, pngDatas.data(), "./result.png");
 	}
 
 	Eigen::Vector3f PTScene::Radiance(const PT::Ray& ray, int depth)

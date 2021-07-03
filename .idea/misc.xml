@@ -6,6 +6,7 @@
       <file path="$PROJECT_DIR$/Source" />
     </sourceRoots>
     <libraryRoots>
+      <file path="$PROJECT_DIR$/ThirdParty" />
       <file path="$PROJECT_DIR$/ThirdParty/EIGEN" />
       <file path="$PROJECT_DIR$/ThirdParty/EasyBMP_1.06" />
     </libraryRoots>

@@ -10,7 +10,7 @@ int main()
 	PT::PTRandom<float>::SetSeed(2);
 	
 	PTMain::PTScene Scene;
-	Scene.DoPathTracing(400, 300, 256);
+	Scene.DoPathTracing(800, 600, 256);
 	
 	return EXIT_SUCCESS;
 }
