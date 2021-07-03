@@ -1,7 +1,6 @@
 #pragma once
 #include "Eigen/Dense"
-#include "PTMacroDefine.h"
-#include "PTAPI.h"
+#include "PTBasicDefine.h"
 
 namespace PT
 {
@@ -9,15 +8,15 @@ namespace PT
 	
 	struct PT_API Ray
 	{
-		Eigen::Vector3d Origin;
-		Eigen::Vector3d Direction;
+		PTVector3d Origin;
+        PTVector3d Direction;
 	};
 	
 	struct PT_API RayIntersectDesc
 	{
 		RayIntersectDesc()
 			: bHit(false)
-			, t(PT_NO_INTERSECT_VALUE)
+			, t(NO_HIT_DIST)
 			, HitShape(nullptr)
 		{
 			

@@ -1,5 +1,5 @@
 #pragma once
-#include "PTCamera.h"
+#include "PTBasicDefine.h"
 #include "PTSceneDesc.h"
 
 namespace PTMain

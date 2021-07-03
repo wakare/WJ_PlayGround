@@ -2,7 +2,7 @@
 
 namespace PT
 {
-	ShapeSphere::ShapeSphere(const Eigen::Vector3d& center, double radius)
+	ShapeSphere::ShapeSphere(const PTVector3d & center, double radius)
 		: Center(center)
 		, Radius(radius)
 	{
@@ -13,17 +13,17 @@ namespace PT
 	{
 		RayIntersectDesc result;
 		
-		Eigen::Vector3d op = Center - ray.Origin;
-		double t, b = op.dot(ray.Direction), det = b * b - op.dot(op) + Radius * Radius;
-		static const double eps = 1e-3;
+		PT::PTVector3d op = Center - ray.Origin.cast<double>();
+		double b = op.dot(ray.Direction.cast<double>()), det = b * b - op.dot(op) + Radius * Radius;
+		static const double eps = DBL_EPSILON;
 		if (det < 0.0)
 		{
 			return result;
 		}
 		
 		det = sqrt(det);
-		result.t = (t = b - det) > eps ? t : ((t = b + det) > eps ? t : 0.0);
-		result.bHit = (result.t > eps);
+		result.t = ( b - det) > eps ?  b - det : (( b + det) > eps ?  b + det : 0.0);
+		result.bHit = (result.t > 0.0f);
 
 		//const Eigen::Vector3d intersect = ray.Origin + ray.Direction * result.t;
 		//const Eigen::Vector3d n = (intersect - Center).normalized();
@@ -33,54 +33,13 @@ namespace PT
 		//result.t -= eps;
 		return result;
 	}
-	
-	/*RayIntersectDesc ShapeSphere::Hit(const Ray& ray) const
+
+	PTVector3d ShapeSphere::HitNormal(const Ray& ray, const RayIntersectDesc& hitInfo, bool& outInto)
 	{
-		RayIntersectDesc result;
-		result.t = PT_NO_INTERSECT_VALUE;
-		result.bHit = false;
-		
-		const Eigen::Vector3d a = (Center - ray.Origin).cast<double>().normalized();
-		const Eigen::Vector3d dir = ray.Direction.cast<double>().normalized();
+		const PTVector3d intersect = ray.Origin + ray.Direction * hitInfo.t;
+		const PTVector3d n = (intersect - Center).normalized();
 
-		double cosValue = a.dot(dir);
-		cosValue = std::max(-1.0, cosValue);
-		cosValue = std::min(1.0, cosValue);
-		
-		const double angle = acos(cosValue);
-		if (angle > 0.5 * PT_PI)
-		{
-			return result;
-		}
-
-		const double linelength = (Center - ray.Origin).norm();
-		if (linelength < Radius)
-		{
-			return result;
-		}
-		
-		const double distance = linelength * sin(angle);
-		if (distance > Radius)
-		{
-			return result;
-		}
-		
-		const double b = Radius * Radius - distance * distance;
-		assert(b >= 0.0);
-
-		result.bHit = true;
-		result.t = linelength * cos(angle) - sqrt(b);
-		assert(result.t >= -FLT_EPSILON);
-		
-		return result;
-	}*/
-
-	Eigen::Vector3d ShapeSphere::HitNormal(const Ray& ray, const RayIntersectDesc& hitInfo, bool& outInto)
-	{
-		const Eigen::Vector3d intersect = ray.Origin + ray.Direction * hitInfo.t;
-		const Eigen::Vector3d n = (intersect - Center).normalized();
-
-		outInto = n.dot(ray.Direction) < 0;
+		outInto = n.dot(ray.Direction.cast<double>()) < 0;
 		return outInto ? n : -n;
 	}
 

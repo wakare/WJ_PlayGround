@@ -9,7 +9,7 @@ namespace PT
 	{
 	public:
 		virtual RayIntersectDesc Hit(const Ray& ray) const = 0;
-		virtual Eigen::Vector3d HitNormal(const Ray& ray, const RayIntersectDesc& hitInfo, bool& outInto) = 0;
+		virtual PTVector3d HitNormal(const Ray& ray, const RayIntersectDesc& hitInfo, bool& outInto) = 0;
 		virtual AABB BoundingBox() const = 0;
 	};
 

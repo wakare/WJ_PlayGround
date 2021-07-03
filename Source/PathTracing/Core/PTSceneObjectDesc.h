@@ -1,6 +1,6 @@
 #pragma once
 #include "PTShapeDesc.h"
-#include "PTMaterial.h"
+#include "PTBasicDefine.h"
 #include <cassert>
 #include <memory>
 #include <vector>
