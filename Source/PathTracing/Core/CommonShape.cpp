@@ -12,9 +12,12 @@ namespace PT
 	RayIntersectDesc ShapeSphere::Hit(const Ray& ray) const
 	{
 		RayIntersectDesc result;
-		
+
+		// Important: must use double precision to calculate op!
 		PT::PTVector3d op = Center - ray.Origin.cast<double>();
-		double b = op.dot(ray.Direction.cast<double>()), det = b * b - op.dot(op) + Radius * Radius;
+		double b = op.dot(ray.Direction.cast<double>());
+		double det = b * b - op.dot(op) + Radius * Radius;
+
 		static const double eps = DBL_EPSILON;
 		if (det < 0.0)
 		{
@@ -28,12 +31,12 @@ namespace PT
 		return result;
 	}
 
-	PTVector3d ShapeSphere::HitNormal(const Ray& ray, const RayIntersectDesc& hitInfo, bool& outInto)
+	PTVector3f ShapeSphere::HitNormal(const Ray& ray, const RayIntersectDesc& hitInfo, bool& outInto)
 	{
-		const PTVector3d intersect = (ray.Origin + ray.Direction * hitInfo.t).cast<double>();
-		const PTVector3d n = (intersect - Center).normalized();
+		const PTVector3f intersect = ray.Origin + ray.Direction * hitInfo.t;
+		const PTVector3f n = (intersect - Center.cast<float>()).normalized();
 
-		outInto = n.dot(ray.Direction.cast<double>()) < 0;
+		outInto = n.dot(ray.Direction) < 0;
 		return outInto ? n : -n;
 	}
 

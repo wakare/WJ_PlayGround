@@ -36,15 +36,15 @@ namespace PTMain
 		{
 			SceneDesc = std::make_shared<PT::PTSceneDesc>();
 
-			std::shared_ptr<PT::ShapeSphere> Sphere1 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(1e5f + 1.0f, 40.8f, 81.6f), 1e5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere2 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(-1e5f + 99.0f, 40.8f, 81.6f), 1e5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere3 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0f, 40.8f, 1e5f), 1e5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere4 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0f, 40.8f, -1e5f + 170.0f), 1e5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere5 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0f, 1e5f, 81.6f), 1e5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere6 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0f, -1e5f + 81.6f, 81.6f), 1e5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere7 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(27.0f, 16.5f, 47.0f), 16.5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere8 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(73.0f, 16.5f, 78.0f), 16.5f);
-			std::shared_ptr<PT::ShapeSphere> Sphere9 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0f, 681.6f - 0.27f, 81.6f), 600.0f);
+			std::shared_ptr<PT::ShapeSphere> Sphere1 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(1e5 + 1.0, 40.8, 81.6), 1e5);
+			std::shared_ptr<PT::ShapeSphere> Sphere2 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(-1e5 + 99.0, 40.8, 81.6), 1e5);
+			std::shared_ptr<PT::ShapeSphere> Sphere3 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0, 40.8, 1e5), 1e5);
+			std::shared_ptr<PT::ShapeSphere> Sphere4 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0, 40.8, -1e5 + 170.0), 1e5);
+			std::shared_ptr<PT::ShapeSphere> Sphere5 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0, 1e5, 81.6), 1e5);
+			std::shared_ptr<PT::ShapeSphere> Sphere6 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0, -1e5 + 81.6, 81.6f), 1e5);
+			std::shared_ptr<PT::ShapeSphere> Sphere7 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(27.0, 16.5, 47.0), 16.5);
+			std::shared_ptr<PT::ShapeSphere> Sphere8 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(73.0, 16.5, 78.0), 16.5);
+			std::shared_ptr<PT::ShapeSphere> Sphere9 = std::make_shared<PT::ShapeSphere>(PT::PTVector3d(50.0, 681.6 - 0.27, 81.6), 600.0);
 
 			std::shared_ptr<PT::PTMaterial> material1 = std::make_shared<PT::PTMaterial>(PT::EMRT_DIFFUSE,
 				Eigen::Vector3f{ 0.75f, 0.25f, 0.25f }, Eigen::Vector3f{ 0.0f, 0.0f, 0.0f });
@@ -233,12 +233,12 @@ namespace PTMain
 
 		case PT::EMRT_SPECULAR:
 			{
-                PT::PTVector3d n = hitNormal.cast<double>();
+                PT::PTVector3f n = hitNormal;
                 if (!into) n = -n;
 
 				PT::Ray reflRay;
 				reflRay.Origin = hitPos;
-				reflRay.Direction = ray.Direction - n.cast<float>() * 2 * n.cast<float>().dot(ray.Direction);
+				reflRay.Direction = ray.Direction - n * 2 * n.dot(ray.Direction);
 				reflRay.Direction.normalize();
 				
 				return hitObj->GetMaterial().Emission + Op(diff, (Radiance(reflRay, depth + 1)));
@@ -247,12 +247,12 @@ namespace PTMain
 
 		case PT::EMRT_REFRACT:
 			{
-				PT::PTVector3d n = hitNormal.cast<double>();
+				PT::PTVector3f n = hitNormal;
 				if (!into) n = -n;
 				
 				PT::Ray reflRay;
 				reflRay.Origin = hitPos;
-				reflRay.Direction = ray.Direction - n.cast<float>() * 2 * n.cast<float>().dot(ray.Direction);
+				reflRay.Direction = ray.Direction - n * 2 * n.dot(ray.Direction);
 				reflRay.Direction.normalize();
 
 				double nc = 1.0, nt = 1.5, nnt = into ? nc / nt : nt / nc, ddn = ray.Direction.dot(hitNormal);
