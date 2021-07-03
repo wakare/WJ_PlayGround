@@ -129,11 +129,11 @@ namespace PTMain
 				for (int n = 0; n < sampleCount; ++n)
 				{
 					PT::Ray ray;
-					ray.Direction = cx * ((x + PT::PTRandom<float>::Generate01()) / width - 0.5f)
-						+ cy * ((y + PT::PTRandom<float>::Generate01()) / height - 0.5f)
-						+ Camera->Dir.cast<double>();
+					ray.Direction = (cx * ((x + PT::PTRandom<float>::Generate01()) / width - 0.5f)
+						+ cy * ((y + PT::PTRandom<float>::Generate01()) / height - 0.5f)).cast<float>()
+						+ Camera->Dir;
 					ray.Direction.normalize();
-					ray.Origin = Camera->Pos.cast<double>() + ray.Direction * 140.0f;
+					ray.Origin = Camera->Pos + ray.Direction * 140.0f;
 					
 					pixel += clamp(Radiance(ray, 0));
 				}
@@ -216,8 +216,8 @@ namespace PTMain
                 PT::PTVector3f v = w.cross(u).normalized();
 				
 				PT::Ray diffRay;
-				diffRay.Origin = hitPos.cast<double>();
-				diffRay.Direction = (u * cosf(r1) * r2s + v * sinf(r1) * r2s + w * sqrtf(1 - r2)).normalized().cast<double>();
+				diffRay.Origin = hitPos;
+				diffRay.Direction = (u * cosf(r1) * r2s + v * sinf(r1) * r2s + w * sqrtf(1 - r2)).normalized();
 
 				float test = diffRay.Direction.cast<float>().dot(hitNormal);
 				if (test < -FLT_EPSILON)
@@ -237,8 +237,8 @@ namespace PTMain
                 if (!into) n = -n;
 
 				PT::Ray reflRay;
-				reflRay.Origin = hitPos.cast<double>();
-				reflRay.Direction = ray.Direction - n.cast<double>() * 2 * n.cast<double>().dot(ray.Direction);
+				reflRay.Origin = hitPos;
+				reflRay.Direction = ray.Direction - n.cast<float>() * 2 * n.cast<float>().dot(ray.Direction);
 				reflRay.Direction.normalize();
 				
 				return hitObj->GetMaterial().Emission + Op(diff, (Radiance(reflRay, depth + 1)));
@@ -251,11 +251,11 @@ namespace PTMain
 				if (!into) n = -n;
 				
 				PT::Ray reflRay;
-				reflRay.Origin = hitPos.cast<double>();
-				reflRay.Direction = ray.Direction - n * 2 * n.dot(ray.Direction);
+				reflRay.Origin = hitPos;
+				reflRay.Direction = ray.Direction - n.cast<float>() * 2 * n.cast<float>().dot(ray.Direction);
 				reflRay.Direction.normalize();
 
-				double nc = 1.0, nt = 1.5, nnt = into ? nc / nt : nt / nc, ddn = ray.Direction.dot(hitNormal.cast<double>());
+				double nc = 1.0, nt = 1.5, nnt = into ? nc / nt : nt / nc, ddn = ray.Direction.dot(hitNormal);
 				double cos2t = 1 - nnt * nnt * (1 - ddn * ddn);
 				if (cos2t < 0.0)
 				{
@@ -276,8 +276,8 @@ namespace PTMain
 					else
 					{
 						PT::Ray tempRay;
-						tempRay.Origin = hitPos.cast<double>();
-						tempRay.Direction = tdir.cast<double>();
+						tempRay.Origin = hitPos;
+						tempRay.Direction = tdir;
 						
 						return hitObj->GetMaterial().Emission + Op(diff, (TP * Radiance(tempRay, depth + 1)));
 					}
@@ -285,8 +285,8 @@ namespace PTMain
 				else
 				{
 					PT::Ray tempRay;
-					tempRay.Origin = hitPos.cast<double>();
-					tempRay.Direction = tdir.cast<double>();
+					tempRay.Origin = hitPos;
+					tempRay.Direction = tdir;
 					
 					return hitObj->GetMaterial().Emission + Op(diff, Re * Radiance(reflRay, depth + 1) + Tr * Radiance(tempRay, depth + 1));
 				}

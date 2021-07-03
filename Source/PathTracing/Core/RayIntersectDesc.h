@@ -8,8 +8,8 @@ namespace PT
 	
 	struct PT_API Ray
 	{
-		PTVector3d Origin;
-        PTVector3d Direction;
+		PTVector3f Origin;
+        PTVector3f Direction;
 	};
 	
 	struct PT_API RayIntersectDesc

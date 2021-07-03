@@ -30,7 +30,7 @@ namespace PT
 
 	PTVector3d ShapeSphere::HitNormal(const Ray& ray, const RayIntersectDesc& hitInfo, bool& outInto)
 	{
-		const PTVector3d intersect = ray.Origin + ray.Direction * hitInfo.t;
+		const PTVector3d intersect = (ray.Origin + ray.Direction * hitInfo.t).cast<double>();
 		const PTVector3d n = (intersect - Center).normalized();
 
 		outInto = n.dot(ray.Direction.cast<double>()) < 0;
