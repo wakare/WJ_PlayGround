@@ -123,8 +123,6 @@ namespace PT
         {
             return Dist != NO_HIT_DIST;
         }
-
-
     };
 }
 
