@@ -22,7 +22,7 @@ namespace PT
 		std::shared_ptr<PTMaterial> Material;
 		std::vector<std::shared_ptr<PTShapeDesc>> Shapes;
 		AABB BoundingBox;
-		bool NeedUpdateBoudingBox;
+		bool NeedUpdateBoundingBox;
 	};
 
 	

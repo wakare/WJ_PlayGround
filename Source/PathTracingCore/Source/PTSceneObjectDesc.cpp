@@ -4,14 +4,14 @@ namespace PT
 {
 	PTSceneObjectDesc::PTSceneObjectDesc(std::shared_ptr<PTMaterial> material)
 		: Material(material)
-		, NeedUpdateBoudingBox(true)
+		, NeedUpdateBoundingBox(true)
 	{
 	}
 
 	void PTSceneObjectDesc::AddShapeDesc(std::shared_ptr<PTShapeDesc> shape)
 	{
 		Shapes.push_back(shape);
-		NeedUpdateBoudingBox = true;
+        NeedUpdateBoundingBox = true;
 	}
 
 	bool PTSceneObjectDesc::Intersect(const Ray& ray, RayIntersectDesc& out_result)
@@ -47,7 +47,7 @@ namespace PT
 
 	const AABB& PTSceneObjectDesc::GetAABB()
 	{
-		if (NeedUpdateBoudingBox)
+		if (NeedUpdateBoundingBox)
 		{
 			for (const auto& Desc : Shapes)
 			{
@@ -55,7 +55,7 @@ namespace PT
 				BoundingBox.extend(Desc->BoundingBox());
 			}
 
-			NeedUpdateBoudingBox = false;
+            NeedUpdateBoundingBox = false;
 		}
 
 		return BoundingBox;

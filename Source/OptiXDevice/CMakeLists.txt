@@ -11,7 +11,12 @@ add_library(OptiXDevice
         cmake/FindOptiX.cmake
 
         optix7.h
+        CUDABuffer.h
         OptiXRenderer.h
+        gdt/gdt.h
+        gdt/math/LinearSpace.h
+        gdt/math/AffineSpace.h
 
         OptiXRenderer.cpp
+        gdt/gdt.cpp
         )

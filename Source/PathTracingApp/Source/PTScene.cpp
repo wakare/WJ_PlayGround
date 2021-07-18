@@ -3,11 +3,9 @@
 #include <ppl.h>
 #include <fstream>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-
 #include "CommonShape.h"
 #include "PTBasicDefine.h"
+#include "PTUtil.h"
 
 namespace PTMain
 {
@@ -157,7 +155,9 @@ namespace PTMain
             _rgbdata[3 * i + 2] = toInt( Pixel.z());
         }
 
-        stbi_write_png("output.png", width, height, 3, _rgbdata, width * 3);
+        const bool bExport = PTUtil::WritePNGChannel("Output.png", _rgbdata, width, height, 3);
+        assert(bExport);
+
         free(_rgbdata);
 	}
 
