@@ -7,17 +7,27 @@
 
 #include "CUDABuffer.h"
 #include "LaunchParams.h"
+#include "TriangleMesh.h"
 #include "gdt/math/vec.h"
 
 using namespace gdt;
 
 namespace gdt
 {
+    struct Camera {
+        /*! camera position - *from* where we are looking */
+        vec3f from;
+        /*! which point we are looking *at* */
+        vec3f at;
+        /*! general up-vector */
+        vec3f up;
+    };
+
     class OptiXRenderer {
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        OptiXRenderer();
+        OptiXRenderer(const TriangleMesh& model);
 
         /*! render one frame */
         void render();
@@ -28,6 +38,8 @@ namespace gdt
         /*! download the rendered color buffer */
         void downloadPixels(uint32_t h_pixels[]);
 
+        /*! set camera to render with */
+        void setCamera(const Camera &camera);
     protected:
         // ------------------------------------------------------------------
         // internal helper functions
@@ -59,6 +71,9 @@ namespace gdt
 
         /*! constructs the shader binding table */
         void buildSBT();
+
+        /*! build an acceleration structure for the given triangle mesh */
+        OptixTraversableHandle buildAccel(const TriangleMesh &model);
 
     private:
         CUcontext           cudaContext;
@@ -96,6 +111,16 @@ namespace gdt
         /*! @} */
 
         CUDABuffer colorBuffer;
+
+        /*! the camera we are to render with. */
+        Camera lastSetCamera;
+
+        /*! the model we are going to trace rays against */
+        const TriangleMesh model;
+        CUDABuffer vertexBuffer;
+        CUDABuffer indexBuffer;
+        //! buffer that keeps the (final, compacted) accel structure
+        CUDABuffer asBuffer;
     };
 }
 

@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
+
 add_library(OptiXDevice
         cmake/configure_build_type.cmake
         cmake/configure_optix.cmake
@@ -19,4 +21,5 @@ add_library(OptiXDevice
 
         OptiXRenderer.cpp
         gdt/gdt.cpp
+        ${embedded_ptx_code}
         )

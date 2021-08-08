@@ -8,7 +8,7 @@ set(OptiXDeviceInclude "../OptiXDevice")
 include_directories(Source)
 include_directories(${OptiX_INCLUDE})
 
-cuda_compile_and_embed(embedded_ptx_code devicePrograms.cu)
+## cuda_compile_and_embed(embedded_ptx_code ../OptiXDevice/devicePrograms.cu)
 
 ## Find all target which inside PTAppSource folder
 file( GLOB PT_SOURCES Source/*.cpp )
@@ -16,7 +16,8 @@ file( GLOB PT_SOURCES Source/*.cpp )
 ## Add target to Main Project
 add_executable(PathTracingApp
         ${PT_SOURCES}
-        ${embedded_ptx_code})
+        #${embedded_ptx_code}
+        )
 
 ## Set Main Project include path
 target_include_directories(PathTracingApp PUBLIC ${PTInclude})

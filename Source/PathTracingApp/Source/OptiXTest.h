@@ -9,7 +9,7 @@
 
 class OptiXTest {
 public:
-    OptiXTest(int width = 800, int height = 600);
+    OptiXTest(const TriangleMesh& model, const Camera& camera, int width = 800, int height = 600);
     void Render();
     bool Download(uint32_t Result[]);
 

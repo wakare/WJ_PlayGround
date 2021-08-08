@@ -4,10 +4,12 @@
 
 #include "OptiXTest.h"
 
-OptiXTest::OptiXTest(int width, int height) :
+OptiXTest::OptiXTest(const TriangleMesh& model, const Camera& camera, int width, int height) :
         width(width),
-        height(height)
+        height(height),
+        Renderer(model)
 {
+    Renderer.setCamera(camera);
     Renderer.resize({width, height});
 }
 
