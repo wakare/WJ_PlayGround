@@ -11,7 +11,7 @@ struct TriangleMesh
 {
     /*! add a unit cube (subject to given xfm matrix) to the current
         triangleMesh */
-    void addUnitCube(const affine3f &xfm)
+    void addUnitCube(const affine3f &xfm, const vec3f& color)
     {
         int firstVertexID = (int)vertex.size();
         vertex.push_back(xfmPoint(xfm,vec3f(0.f,0.f,0.f)));
@@ -35,21 +35,25 @@ struct TriangleMesh
             index.push_back(firstVertexID+vec3i(indices[3*i+0],
                                                 indices[3*i+1],
                                                 indices[3*i+2]));
+
+        meshColor = color;
     }
 
     //! add aligned cube aith front-lower-left corner and size
-    void addCube(const vec3f &center, const vec3f &size)
+    void addCube(const vec3f &center, const vec3f &size, const vec3f& color)
     {
         affine3f xfm;
         xfm.p = center - 0.5f*size;
         xfm.l.vx = vec3f(size.x,0.f,0.f);
         xfm.l.vy = vec3f(0.f,size.y,0.f);
         xfm.l.vz = vec3f(0.f,0.f,size.z);
-        addUnitCube(xfm);
+        addUnitCube(xfm, color);
     }
 
     std::vector<vec3f> vertex;
     std::vector<vec3i> index;
+
+    vec3f meshColor;
 };
 
 #endif //WJ_PLAYGROUND_TRIANGLEMESH_H

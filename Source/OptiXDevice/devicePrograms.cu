@@ -65,9 +65,17 @@ namespace gdt {
 
     extern "C" __global__ void __closesthit__radiance()
     {
-        const int   primID = optixGetPrimitiveIndex();
+        /*const int   primID = optixGetPrimitiveIndex();
         vec3f &prd = *(vec3f*)getPRD<vec3f>();
-        prd = gdt::randomColor(primID);
+        prd = gdt::randomColor(primID);*/
+
+        const HitGroupUserParams* hitParams = (const HitGroupUserParams*)optixGetSbtDataPointer();
+        vec3f& payload = (*getPRD<vec3f>());
+
+        //const int   primID = optixGetPrimitiveIndex();
+
+
+        payload = hitParams->color;
     }
 
     extern "C" __global__ void __anyhit__radiance()

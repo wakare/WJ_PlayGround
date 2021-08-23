@@ -4,7 +4,7 @@
 
 #include "OptiXTest.h"
 
-OptiXTest::OptiXTest(const TriangleMesh& model, const Camera& camera, int width, int height) :
+OptiXTest::OptiXTest(const std::vector<TriangleMesh>& model, const Camera& camera, int width, int height) :
         width(width),
         height(height),
         Renderer(model)

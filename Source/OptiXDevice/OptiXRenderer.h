@@ -27,7 +27,7 @@ namespace gdt
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        OptiXRenderer(const TriangleMesh& model);
+        OptiXRenderer(const std::vector<TriangleMesh>& model);
 
         /*! render one frame */
         void render();
@@ -73,7 +73,7 @@ namespace gdt
         void buildSBT();
 
         /*! build an acceleration structure for the given triangle mesh */
-        OptixTraversableHandle buildAccel(const TriangleMesh &model);
+        OptixTraversableHandle buildAccel(const std::vector<TriangleMesh>& model);
 
     private:
         CUcontext           cudaContext;
@@ -115,10 +115,10 @@ namespace gdt
         /*! the camera we are to render with. */
         Camera lastSetCamera;
 
-        /*! the model we are going to trace rays against */
-        const TriangleMesh model;
-        CUDABuffer vertexBuffer;
-        CUDABuffer indexBuffer;
+        /*! the models we are going to trace rays against */
+        std::vector<TriangleMesh> models;
+        std::vector<CUDABuffer> vertexBuffer;
+        std::vector<CUDABuffer> indexBuffer;
         //! buffer that keeps the (final, compacted) accel structure
         CUDABuffer asBuffer;
     };

@@ -11,6 +11,11 @@ using namespace gdt;
 
 namespace gdt
 {
+    struct HitGroupUserParams
+    {
+        vec3f color;
+    };
+
     struct LaunchParams
     {
         struct {
