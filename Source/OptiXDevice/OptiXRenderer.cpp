@@ -374,8 +374,11 @@ namespace gdt {
 
         vertexBuffer.resize(models.size());
         indexBuffer.resize(models.size());
-        std::vector<OptixBuildInput> triangleInputs(models.size());
 
+        std::vector<uint32_t> triangleFlags(models.size());
+        std::vector<OptixBuildInput> triangleInputs(models.size());
+        std::vector<CUdeviceptr> d_vertices(models.size());
+        std::vector<CUdeviceptr> d_indices(models.size());
         OptixTraversableHandle asHandle { 0 };
 
         size_t modelIndex = 0;
@@ -393,24 +396,24 @@ namespace gdt {
 
             // create local variables, because we need a *pointer* to the
             // device pointers
-            CUdeviceptr d_vertices = vertexBuffer[modelIndex].d_pointer();
-            CUdeviceptr d_indices  = indexBuffer[modelIndex].d_pointer();
+            d_vertices[modelIndex] = vertexBuffer[modelIndex].d_pointer();
+            d_indices[modelIndex]  = indexBuffer[modelIndex].d_pointer();
 
             triangleInput.triangleArray.vertexFormat        = OPTIX_VERTEX_FORMAT_FLOAT3;
             triangleInput.triangleArray.vertexStrideInBytes = sizeof(vec3f);
             triangleInput.triangleArray.numVertices         = (int)model.vertex.size();
-            triangleInput.triangleArray.vertexBuffers       = &d_vertices;
+            triangleInput.triangleArray.vertexBuffers       = &d_vertices[modelIndex];
 
             triangleInput.triangleArray.indexFormat         = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
             triangleInput.triangleArray.indexStrideInBytes  = sizeof(vec3i);
             triangleInput.triangleArray.numIndexTriplets    = (int)model.index.size();
-            triangleInput.triangleArray.indexBuffer         = d_indices;
+            triangleInput.triangleArray.indexBuffer         = d_indices[modelIndex];
 
-            uint32_t triangleInputFlags[1] = { 0 };
+            triangleFlags[modelIndex] = { 0 };
 
             // in this example we have one SBT entry, and no per-primitive
             // materials:
-            triangleInput.triangleArray.flags               = triangleInputFlags;
+            triangleInput.triangleArray.flags               = &triangleFlags[modelIndex];
             triangleInput.triangleArray.numSbtRecords               = 1;
             triangleInput.triangleArray.sbtIndexOffsetBuffer        = 0;
             triangleInput.triangleArray.sbtIndexOffsetSizeInBytes   = 0;
