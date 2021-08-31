@@ -70,12 +70,41 @@ namespace gdt {
         prd = gdt::randomColor(primID);*/
 
         const HitGroupUserParams* hitParams = (const HitGroupUserParams*)optixGetSbtDataPointer();
-        vec3f& payload = (*getPRD<vec3f>());
+        RayPayload& payload = (*getPRD<RayPayload>());
+        ++payload.bounceCount;
 
+        payload.color = payload.color + hitParams->MeshMaterial.Color;
+
+        if (payload.bounceCount < 2)
+        {
+            // R.R
+            float maxChannel = max(payload.color.z, max(payload.color.x, payload.color.y));
+            float rand = 1.0f * payload.RandGenerator() / LCG<>::LCG_RAND_MAX;
+            if (rand < maxChannel)
+            {
+                vec3f sampleDirection = vec3f(0.0f, 0.0f, 0.0f);
+                float samplePdf = 0.0f;
+                hitParams->MeshMaterial.SampleDirection(payload.RandGenerator, optixGetWorldRayDirection(),
+                                                        sampleDirection, samplePdf);
+
+                uint32_t u0 = optixGetPayload_0();
+                uint32_t u1 = optixGetPayload_1();
+
+                optixTrace(optixLaunchParams.traversable,
+                           optixGetWorldRayOrigin(),
+                           sampleDirection,
+                           0.f,    // tmin
+                           1e20f,  // tmax
+                           0.0f,   // rayTime
+                           OptixVisibilityMask( 255 ),
+                           OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+                           SURFACE_RAY_TYPE,             // SBT offset
+                           RAY_TYPE_COUNT,               // SBT stride
+                           SURFACE_RAY_TYPE,             // missSBTIndex
+                           u0, u1);
+            }
+        }
         //const int   primID = optixGetPrimitiveIndex();
-
-
-        payload = hitParams->color;
     }
 
     extern "C" __global__ void __anyhit__radiance()
@@ -109,15 +138,6 @@ namespace gdt {
 
         const auto &camera = optixLaunchParams.camera;
 
-        // our per-ray data for this example. what we initialize it to
-        // won't matter, since this value will be overwritten by either
-        // the miss or hit program, anyway
-        vec3f pixelColorPRD = vec3f(0.f);
-
-        // the values we store the PRD pointer in:
-        uint32_t u0, u1;
-        packPointer( &pixelColorPRD, u0, u1 );
-
         // normalized screen plane position, in [0,1]^2
         const vec2f screen(vec2f(ix+.5f,iy+.5f)
                            / vec2f(optixLaunchParams.frame.size));
@@ -126,6 +146,19 @@ namespace gdt {
         vec3f rayDir = normalize(camera.direction
                                  + (screen.x - 0.5f) * camera.horizontal
                                  + (screen.y - 0.5f) * camera.vertical);
+
+        // our per-ray data for this example. what we initialize it to
+        // won't matter, since this value will be overwritten by either
+        // the miss or hit program, anyway
+        RayPayload Payload;
+        Payload.color = vec3f(0.0f, 0.0f, 0.0f);
+        Payload.bounceCount = 0;
+
+        //vec3f pixelColorPRD = vec3f(0.f);
+        // the values we store the PRD pointer in:
+        uint32_t u0, u1;
+        //packPointer( &pixelColorPRD, u0, u1 );
+        packPointer( &Payload, u0, u1 );
 
         optixTrace(optixLaunchParams.traversable,
                    camera.position,
@@ -140,9 +173,9 @@ namespace gdt {
                    SURFACE_RAY_TYPE,             // missSBTIndex
                    u0, u1 );
 
-        const int r = int(255.99f*pixelColorPRD.x);
-        const int g = int(255.99f*pixelColorPRD.y);
-        const int b = int(255.99f*pixelColorPRD.z);
+        const int r = int(255.99f*Payload.color.x);
+        const int g = int(255.99f*Payload.color.y);
+        const int b = int(255.99f*Payload.color.z);
 
         // convert to 32-bit rgba value (we explicitly set alpha to 0xff
         // to make stb_image_write happy ...

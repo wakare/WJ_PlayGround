@@ -54,7 +54,9 @@ namespace gdt {
   /*! simple 24-bit linear congruence generator */
   template<unsigned int N=16>
   struct LCG {
-    
+
+      enum {LCG_RAND_MAX = 0x00FFFFFF};
+
     inline __both__ LCG()
     { /* intentionally empty so we can use it in device vars that
          don't allow dynamic initialization (ie, PRD) */

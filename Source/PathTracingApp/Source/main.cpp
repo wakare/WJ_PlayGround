@@ -22,11 +22,20 @@ int main()
 	std::vector<TriangleMesh> models;
     models.resize(2);
 
+    std::vector<TriangleMeshMaterial> materials;
+    materials.resize(2);
+
+    materials[1].Color = {0.0f, 1.0f, 0.0f};
+
     // 100x100 thin ground plane
     models[1].addCube(vec3f(0.f,-1.5f,0.f),vec3f(10.f,.1f,10.f), {1.0f, 0.0f, 0.0f});
+    models[1].setMaterial(materials[1]);
+
+    materials[0].Color = {1.0f, 0.0f, 0.0f};
 
     // a unit cube centered on top of that
     models[0].addCube(vec3f(0.f,0.f,0.f),vec3f(2.f,2.f,2.f), {0.0f, 1.0f, 0.0f});
+    models[0].setMaterial(materials[0]);
 
     Camera camera = { /*from*/vec3f(-10.f,2.f,-12.f),
             /* at */vec3f(0.f,0.f,0.f),

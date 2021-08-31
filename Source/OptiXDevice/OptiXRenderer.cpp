@@ -310,7 +310,7 @@ namespace gdt {
             int objectType = 0;
             HitgroupRecord rec;
             OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupPGs[objectType], &rec));
-            rec.userParams.color = models[i].meshColor;
+            rec.userParams.MeshMaterial = models[i].meshMaterial;
             hitgroupRecords.push_back(rec);
         }
         hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);

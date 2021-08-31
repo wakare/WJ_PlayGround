@@ -6,6 +6,7 @@
 #define WJ_PLAYGROUND_LAUNCHPARAMS_H
 
 #include "gdt/math/vec.h"
+#include "TriangleMesh.h"
 
 using namespace gdt;
 
@@ -13,7 +14,8 @@ namespace gdt
 {
     struct HitGroupUserParams
     {
-        vec3f color;
+        // vec3f color;
+        TriangleMeshMaterial MeshMaterial;
     };
 
     struct LaunchParams
@@ -31,6 +33,13 @@ namespace gdt
         } camera;
 
         OptixTraversableHandle traversable;
+    };
+
+    struct RayPayload
+    {
+        vec3f color;
+        int bounceCount;
+        LCG<> RandGenerator;
     };
 }
 

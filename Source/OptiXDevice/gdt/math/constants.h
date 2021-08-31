@@ -27,6 +27,10 @@
     #define M_PI 3.141593f
 #endif
 
+#ifndef M_PI_INV
+    #define M_PI_INV 0.3183098f
+#endif
+
 namespace gdt {
 
   static struct ZeroTy

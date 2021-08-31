@@ -6,6 +6,10 @@
 #define WJ_PLAYGROUND_TRIANGLEMESH_H
 
 #include "gdt/math/AffineSpace.h"
+#include "TriangleMeshMaterial.h"
+#include <vector>
+
+using namespace gdt;
 
 struct TriangleMesh
 {
@@ -36,7 +40,7 @@ struct TriangleMesh
                                                 indices[3*i+1],
                                                 indices[3*i+2]));
 
-        meshColor = color;
+        meshMaterial.Color = color;
     }
 
     //! add aligned cube aith front-lower-left corner and size
@@ -50,10 +54,16 @@ struct TriangleMesh
         addUnitCube(xfm, color);
     }
 
+    void setMaterial(const TriangleMeshMaterial& Material)
+    {
+        meshMaterial = Material;
+    }
+
     std::vector<vec3f> vertex;
     std::vector<vec3i> index;
 
-    vec3f meshColor;
+    //vec3f meshColor;
+    TriangleMeshMaterial meshMaterial;
 };
 
 #endif //WJ_PLAYGROUND_TRIANGLEMESH_H
