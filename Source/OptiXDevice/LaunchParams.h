@@ -16,6 +16,8 @@ namespace gdt
     {
         // vec3f color;
         TriangleMeshMaterial MeshMaterial;
+        vec3f *vertex;
+        vec3i *index;
     };
 
     struct LaunchParams

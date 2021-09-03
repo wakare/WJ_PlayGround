@@ -58,6 +58,11 @@ namespace gdt {
         return {color0.x * color1.x, color0.y * color1.y, color0.z * color1.z};
     }
 
+    static __forceinline__ __device__ vec3f scaleVector(const vec3f& vector, float scale)
+    {
+        return {scale * vector.x,scale * vector.y,scale * vector.z };
+    }
+
     //------------------------------------------------------------------------------
     // closest hit and anyhit programs for radiance-type rays.
     //
@@ -78,38 +83,54 @@ namespace gdt {
         RayPayload& payload = (*getPRD<RayPayload>());
         ++payload.bounceCount;
 
-        if (payload.bounceCount > 2)
+        // printf("Current bounce count: %d\n", payload.bounceCount);
+
+        const int   primID = optixGetPrimitiveIndex();
+        const vec3i index = hitParams->index[primID];
+        const vec3f& v0 = hitParams->vertex[index.x];
+        const vec3f& v1 = hitParams->vertex[index.y];
+        const vec3f& v2 = hitParams->vertex[index.z];
+        const vec3f normal = normalize(cross(v1 - v0, v0 - v2));
+
+        vec3f sampleDirection = vec3f(0.0f, 0.0f, 0.0f);
+        float samplePdf = 0.0f;
+        hitParams->MeshMaterial.SampleDirection(payload.RandGenerator, normal, optixGetWorldRayDirection(),
+                                                sampleDirection, samplePdf);
+
+        // Apply ray pdf
+        payload.color /= payload.pdf;
+
+        if (payload.bounceCount > 5)
         {
+            return;
             float maxChannel = max(payload.color.z, max(payload.color.x, payload.color.y));
-            float rand = 1.0f * payload.RandGenerator() / LCG<>::LCG_RAND_MAX;
-            if (rand > maxChannel)
+            float rand = payload.RandGenerator();
+            if (rand < maxChannel)
             {
-                vec3f sampleDirection = vec3f(0.0f, 0.0f, 0.0f);
-                float samplePdf = 0.0f;
-                hitParams->MeshMaterial.SampleDirection(payload.RandGenerator, optixGetWorldRayDirection(),
-                                                        sampleDirection, samplePdf);
-
-                // Apply ray pdf
-                payload.color /= payload.pdf;
-                payload.pdf = rand;
-
-                uint32_t u0 = optixGetPayload_0();
-                uint32_t u1 = optixGetPayload_1();
-
-                optixTrace(optixLaunchParams.traversable,
-                           optixGetWorldRayOrigin(),
-                           sampleDirection,
-                           0.f,    // tmin
-                           1e20f,  // tmax
-                           0.0f,   // rayTime
-                           OptixVisibilityMask( 255 ),
-                           OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
-                           SURFACE_RAY_TYPE,             // SBT offset
-                           RAY_TYPE_COUNT,               // SBT stride
-                           SURFACE_RAY_TYPE,             // missSBTIndex
-                           u0, u1);
+                return;
             }
+
+            payload.pdf = rand;
         }
+
+        uint32_t u0 = optixGetPayload_0();
+        uint32_t u1 = optixGetPayload_1();
+
+        const float t = optixGetRayTmax() - 0.00001f;
+        vec3f hitLocation = (vec3f)optixGetWorldRayOrigin() + scaleVector(optixGetWorldRayDirection(), t);
+
+        optixTrace(optixLaunchParams.traversable,
+                   hitLocation,
+                   sampleDirection,
+                   0.f,    // tmin
+                   1e20f,  // tmax
+                   0.0f,   // rayTime
+                   OptixVisibilityMask( 255 ),
+                   OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+                   SURFACE_RAY_TYPE,             // SBT offset
+                   RAY_TYPE_COUNT,               // SBT stride
+                   SURFACE_RAY_TYPE,             // missSBTIndex
+                   u0, u1);
 
         payload.color = colorMul(hitParams->MeshMaterial.Diffuse, payload.color) + hitParams->MeshMaterial.Emissive;
     }
@@ -129,9 +150,12 @@ namespace gdt {
 
     extern "C" __global__ void __miss__radiance()
     {
-        vec3f &prd = *(vec3f*)getPRD<vec3f>();
+        RayPayload &prd = *getPRD<RayPayload>();
         // set to constant white as background color
-        prd = vec3f(1.f);
+        if (prd.bounceCount == 0)
+        {
+            prd.color = {0.0f, 0.0f, 0.0f};
+        }
     }
 
     //------------------------------------------------------------------------------
@@ -139,6 +163,8 @@ namespace gdt {
     //------------------------------------------------------------------------------
     extern "C" __global__ void __raygen__renderFrame()
     {
+        const int spp = 16;
+
         // compute a test pattern based on pixel ID
         const int ix = optixGetLaunchIndex().x;
         const int iy = optixGetLaunchIndex().y;
@@ -158,9 +184,7 @@ namespace gdt {
         // won't matter, since this value will be overwritten by either
         // the miss or hit program, anyway
         RayPayload Payload;
-        Payload.color = vec3f(0.0f, 0.0f, 0.0f);
-        Payload.bounceCount = 0;
-        Payload.pdf = 1.0f;
+        Payload.RandGenerator = LCG<>(ix,iy);
 
         //vec3f pixelColorPRD = vec3f(0.f);
         // the values we store the PRD pointer in:
@@ -168,22 +192,33 @@ namespace gdt {
         //packPointer( &pixelColorPRD, u0, u1 );
         packPointer( &Payload, u0, u1 );
 
-        optixTrace(optixLaunchParams.traversable,
-                   camera.position,
-                   rayDir,
-                   0.f,    // tmin
-                   1e20f,  // tmax
-                   0.0f,   // rayTime
-                   OptixVisibilityMask( 255 ),
-                   OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
-                   SURFACE_RAY_TYPE,             // SBT offset
-                   RAY_TYPE_COUNT,               // SBT stride
-                   SURFACE_RAY_TYPE,             // missSBTIndex
-                   u0, u1 );
+        vec3f totalColor = {0.0f, 0.0f, 0.0f};
+        for (int i = 0; i < spp; ++i)
+        {
+            Payload.color = vec3f(0.0f, 0.0f, 0.0f);
+            Payload.bounceCount = 0;
+            Payload.pdf = 1.0f;
 
-        const int r = int(255.99f*Payload.color.x);
-        const int g = int(255.99f*Payload.color.y);
-        const int b = int(255.99f*Payload.color.z);
+            optixTrace(optixLaunchParams.traversable,
+                       camera.position,
+                       rayDir,
+                       0.f,    // tmin
+                       1e20f,  // tmax
+                       0.0f,   // rayTime
+                       OptixVisibilityMask( 255 ),
+                       OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+                       SURFACE_RAY_TYPE,             // SBT offset
+                       RAY_TYPE_COUNT,               // SBT stride
+                       SURFACE_RAY_TYPE,             // missSBTIndex
+                       u0, u1 );
+            totalColor += Payload.color;
+        }
+
+        totalColor /= spp;
+
+        const int r = int(255.99f*totalColor.x);
+        const int g = int(255.99f*totalColor.y);
+        const int b = int(255.99f*totalColor.z);
 
         // convert to 32-bit rgba value (we explicitly set alpha to 0xff
         // to make stb_image_write happy ...

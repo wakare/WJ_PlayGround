@@ -22,24 +22,25 @@ bool BuildTestScene(SceneDesc& Scene)
     float planeHeight = 0.1f;
 
     TriangleMeshMaterial RedMaterial;
-    RedMaterial.Emissive = {0.5f, 0.0f, 0.0f};
-    RedMaterial.Diffuse = {0.5f, 0.5f, 0.5f};
+    RedMaterial.Emissive = {0.0f, 0.0f, 0.0f};
+    RedMaterial.Diffuse = {1.0f, 0.0f, 0.0f};
 
     TriangleMeshMaterial GreenMaterial;
-    GreenMaterial.Emissive = {0.0f, 0.5f, 0.0f};
-    GreenMaterial.Diffuse = {0.5f, 0.5f, 0.5f};
+    GreenMaterial.Emissive = {0.0f, 0.0f, 0.0f};
+    GreenMaterial.Diffuse = {0.0f, 1.0f, 0.0f};
 
     TriangleMeshMaterial WhiteMaterial;
-    WhiteMaterial.Emissive = {0.5f, 0.5f, 0.5f};
-    WhiteMaterial.Diffuse = {0.5f, 0.5f, 0.5f};
+    WhiteMaterial.Emissive = {0.0f, 0.0f, 0.0f};
+    WhiteMaterial.Diffuse = {1.0f, 1.0f, 1.0f};
 
     TriangleMeshMaterial BlueMaterial;
-    BlueMaterial.Emissive = {0.0f, 0.0f, 0.5f};
-    BlueMaterial.Diffuse =  {0.5f, 0.5f, 0.5f};
+    BlueMaterial.Emissive = {0.0f, 0.0f, 0.0f};
+    BlueMaterial.Diffuse =  {0.0f, 0.0f, 1.0f};
 
     TriangleMesh planeTop;
     planeTop.addCube({0.0f, planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
     planeTop.meshMaterial = WhiteMaterial;
+    planeTop.meshMaterial.Emissive = {1.0f, 1.0f, 1.0f};
 
     TriangleMesh planeBottom;
     planeBottom.addCube({0.0f, -planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
@@ -91,7 +92,7 @@ int main()
     const bool bSuccess = BuildTestScene(TestScene);
     assert(bSuccess);
 
-    Camera camera = { /*from*/vec3f(-10.f,2.f,-12.f),
+    Camera camera = { /*from*/vec3f(0.f,0.f,-20.f),
             /* at */vec3f(0.f,0.f,0.f),
             /* up */vec3f(0.f,1.f,0.f) };
 

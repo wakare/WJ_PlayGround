@@ -311,6 +311,8 @@ namespace gdt {
             HitgroupRecord rec;
             OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupPGs[objectType], &rec));
             rec.userParams.MeshMaterial = models[i].meshMaterial;
+            rec.userParams.vertex = (vec3f*) vertexBuffer[i].d_pointer();
+            rec.userParams.index = (vec3i*) indexBuffer[i].d_pointer();
             hitgroupRecords.push_back(rec);
         }
         hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
