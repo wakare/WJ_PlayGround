@@ -20,7 +20,9 @@ struct TriangleMeshMaterial
 {
     ETriangleMeshMaterialType MaterialType;
 
-    vec3f Color;
+    vec3f Emissive;
+    vec3f Diffuse;
+
 
     __both__ void SampleDirection(LCG<>& RandGenerator, const vec3f& inDirection, vec3f& outDirection, float& outPdf) const
     {

@@ -53,6 +53,11 @@ namespace gdt {
         return reinterpret_cast<T*>( unpackPointer( u0, u1 ) );
     }
 
+    static __forceinline__ __device__ vec3f colorMul(const vec3f& color0, const vec3f& color1)
+    {
+        return {color0.x * color1.x, color0.y * color1.y, color0.z * color1.z};
+    }
+
     //------------------------------------------------------------------------------
     // closest hit and anyhit programs for radiance-type rays.
     //
@@ -73,19 +78,20 @@ namespace gdt {
         RayPayload& payload = (*getPRD<RayPayload>());
         ++payload.bounceCount;
 
-        payload.color = payload.color + hitParams->MeshMaterial.Color;
-
-        if (payload.bounceCount < 2)
+        if (payload.bounceCount > 2)
         {
-            // R.R
             float maxChannel = max(payload.color.z, max(payload.color.x, payload.color.y));
             float rand = 1.0f * payload.RandGenerator() / LCG<>::LCG_RAND_MAX;
-            if (rand < maxChannel)
+            if (rand > maxChannel)
             {
                 vec3f sampleDirection = vec3f(0.0f, 0.0f, 0.0f);
                 float samplePdf = 0.0f;
                 hitParams->MeshMaterial.SampleDirection(payload.RandGenerator, optixGetWorldRayDirection(),
                                                         sampleDirection, samplePdf);
+
+                // Apply ray pdf
+                payload.color /= payload.pdf;
+                payload.pdf = rand;
 
                 uint32_t u0 = optixGetPayload_0();
                 uint32_t u1 = optixGetPayload_1();
@@ -104,7 +110,8 @@ namespace gdt {
                            u0, u1);
             }
         }
-        //const int   primID = optixGetPrimitiveIndex();
+
+        payload.color = colorMul(hitParams->MeshMaterial.Diffuse, payload.color) + hitParams->MeshMaterial.Emissive;
     }
 
     extern "C" __global__ void __anyhit__radiance()
@@ -153,6 +160,7 @@ namespace gdt {
         RayPayload Payload;
         Payload.color = vec3f(0.0f, 0.0f, 0.0f);
         Payload.bounceCount = 0;
+        Payload.pdf = 1.0f;
 
         //vec3f pixelColorPRD = vec3f(0.f);
         // the values we store the PRD pointer in:

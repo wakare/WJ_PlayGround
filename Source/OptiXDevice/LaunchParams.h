@@ -39,6 +39,7 @@ namespace gdt
     {
         vec3f color;
         int bounceCount;
+        float pdf;
         LCG<> RandGenerator;
     };
 }

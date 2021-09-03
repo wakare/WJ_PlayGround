@@ -7,42 +7,98 @@
 
 using namespace PTMain;
 
+struct SceneDesc
+{
+    std::vector<TriangleMesh> Meshes;
+};
+
+bool BuildTestScene(SceneDesc& Scene)
+{
+    const vec3f defaultEmissive = {0.2f, 0.2f, 0.2f};
+
+    // planes
+    float planeSize = 5.0f;
+    float planeAxisOffset = 0.5f * planeSize;
+    float planeHeight = 0.1f;
+
+    TriangleMeshMaterial RedMaterial;
+    RedMaterial.Emissive = {0.5f, 0.0f, 0.0f};
+    RedMaterial.Diffuse = {0.5f, 0.5f, 0.5f};
+
+    TriangleMeshMaterial GreenMaterial;
+    GreenMaterial.Emissive = {0.0f, 0.5f, 0.0f};
+    GreenMaterial.Diffuse = {0.5f, 0.5f, 0.5f};
+
+    TriangleMeshMaterial WhiteMaterial;
+    WhiteMaterial.Emissive = {0.5f, 0.5f, 0.5f};
+    WhiteMaterial.Diffuse = {0.5f, 0.5f, 0.5f};
+
+    TriangleMeshMaterial BlueMaterial;
+    BlueMaterial.Emissive = {0.0f, 0.0f, 0.5f};
+    BlueMaterial.Diffuse =  {0.5f, 0.5f, 0.5f};
+
+    TriangleMesh planeTop;
+    planeTop.addCube({0.0f, planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
+    planeTop.meshMaterial = WhiteMaterial;
+
+    TriangleMesh planeBottom;
+    planeBottom.addCube({0.0f, -planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
+    planeBottom.meshMaterial = WhiteMaterial;
+
+    TriangleMesh planeLeft;
+    planeLeft.addCube({-planeAxisOffset, 0.0f, 0.0f}, {planeHeight, planeSize, planeSize});
+    planeLeft.meshMaterial= GreenMaterial;
+
+    TriangleMesh planeRight;
+    planeRight.addCube({planeAxisOffset, 0.0f, 0.0f}, {planeHeight, planeSize, planeSize});
+    planeRight.meshMaterial = RedMaterial;
+
+    TriangleMesh planeBack;
+    planeBack.addCube({0.0f, 0.0f, planeAxisOffset}, {planeSize, planeSize, planeHeight});
+    planeBack.meshMaterial = WhiteMaterial;
+
+    TriangleMesh Box;
+    Box.addCube(vec3f(0.f,0.f,0.f),vec3f(2.f,2.f,2.f));
+    Box.setMaterial(BlueMaterial);
+
+    std::vector<TriangleMesh> models;
+    models.reserve(6);
+
+    models.push_back(planeBottom);
+    models.push_back(planeTop);
+    models.push_back(planeLeft);
+    models.push_back(planeRight);
+    models.push_back(planeBack);
+    models.push_back(Box);
+
+    Scene.Meshes = models;
+
+    return true;
+}
+
+
 int main()
 {
+    //PTMain::PTScene Scene;
+    //Scene.DoPathTracing(800, 600, 64);
+
 	PT::PTRandom<float>::SetSeed(2);
-	
-	//PTMain::PTScene Scene;
-	//Scene.DoPathTracing(800, 600, 64);
 
 	int width = 800;
 	int height = 600;
 
-	uint32_t* DownloadBuffer = (uint32_t*) malloc (width * height * sizeof(uint32_t));
-
-	std::vector<TriangleMesh> models;
-    models.resize(2);
-
-    std::vector<TriangleMeshMaterial> materials;
-    materials.resize(2);
-
-    materials[1].Color = {0.0f, 1.0f, 0.0f};
-
-    // 100x100 thin ground plane
-    models[1].addCube(vec3f(0.f,-1.5f,0.f),vec3f(10.f,.1f,10.f), {1.0f, 0.0f, 0.0f});
-    models[1].setMaterial(materials[1]);
-
-    materials[0].Color = {1.0f, 0.0f, 0.0f};
-
-    // a unit cube centered on top of that
-    models[0].addCube(vec3f(0.f,0.f,0.f),vec3f(2.f,2.f,2.f), {0.0f, 1.0f, 0.0f});
-    models[0].setMaterial(materials[0]);
+    SceneDesc TestScene;
+    const bool bSuccess = BuildTestScene(TestScene);
+    assert(bSuccess);
 
     Camera camera = { /*from*/vec3f(-10.f,2.f,-12.f),
             /* at */vec3f(0.f,0.f,0.f),
             /* up */vec3f(0.f,1.f,0.f) };
 
-    OptiXTest Test(models, camera, width, height);
+    OptiXTest Test(TestScene.Meshes, camera, width, height);
     Test.Render();
+
+    uint32_t* DownloadBuffer = (uint32_t*) malloc (width * height * sizeof(uint32_t));
     Test.Download(DownloadBuffer);
 
     PTUtil::WritePNGChannel("OutputOptiXResult.png", DownloadBuffer, 4, width, height);
