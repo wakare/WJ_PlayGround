@@ -17,6 +17,16 @@ struct TriangleMesh
         triangleMesh */
     void addUnitCube(const affine3f &xfm)
     {
+        /*
+         *
+         *   6 ------ 7
+         *  /        /|
+         * 2 ------ 3 |
+         * | |      | |
+         * | 4 -----| 5
+         * |/       |/
+         * 0 ------ 1
+         * */
         int firstVertexID = (int)vertex.size();
         vertex.push_back(xfmPoint(xfm,vec3f(0.f,0.f,0.f)));
         vertex.push_back(xfmPoint(xfm,vec3f(1.f,0.f,0.f)));

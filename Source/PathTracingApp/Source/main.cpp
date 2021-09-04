@@ -92,7 +92,7 @@ int main()
     const bool bSuccess = BuildTestScene(TestScene);
     assert(bSuccess);
 
-    Camera camera = { /*from*/vec3f(0.f,0.f,-20.f),
+    Camera camera = { /*from*/vec3f(0.f,0.f,-10.f),
             /* at */vec3f(0.f,0.f,0.f),
             /* up */vec3f(0.f,1.f,0.f) };
 

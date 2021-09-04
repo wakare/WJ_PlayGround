@@ -39,7 +39,7 @@ struct TriangleMeshMaterial
         vec3f v = normalize(cross((abs(u.x) > FLT_EPSILON) ? vec3f (0.0f, 1.0f, 0.0f) : vec3f(1.0f, 0.0f, 0.0f), u));
         vec3f w = normalize(cross(u, v));
 
-        outDirection = sinf(rand0) * cosf(rand1) * u + cosf(rand0) * cosf(rand1) * v + sinf(rand1) * w;
+        outDirection = sinf(rand0) * cosf(rand1) * w + cosf(rand0) * cosf(rand1) * v + sinf(rand1) * u;
 
         /*printf("[INFO] rand0 %f rand1 %f u %f %f %f v %f %f %f w %f %f %f Sample direction %f %f %f\n", rand0, rand1,
                u.x, u.y, u.z,
