@@ -63,6 +63,16 @@ namespace gdt {
         return {scale * vector.x,scale * vector.y,scale * vector.z };
     }
 
+    static __forceinline__ __device__ bool hasNAN(const vec3f& vector)
+    {
+         return isnan(vector.x) || isnan(vector.y) || isnan(vector.z);
+    }
+
+    static __forceinline__ __device__ bool hasINF(const vec3f& vector)
+    {
+        return isinf(vector.x) || isinf(vector.y) || isinf(vector.z);
+    }
+
     //------------------------------------------------------------------------------
     // closest hit and anyhit programs for radiance-type rays.
     //
@@ -101,31 +111,28 @@ namespace gdt {
         float pdf = payload.pdf;
         if (payload.bounceCount > 5)
         {
-            payload.color = hitParams->MeshMaterial.Emissive / pdf;
-            return;
-        }
-
-        if (payload.bounceCount > 5)
-        {
-            // return;
-            // float maxChannel = max(payload.color.z, max(payload.color.x, payload.color.y));
-            const vec3f& MatDiffuse = hitParams->MeshMaterial.Diffuse;
-            float maxChannel = max(MatDiffuse.z, max(MatDiffuse.x, MatDiffuse.y));
-            float rand = payload.RandGenerator();
-            if (rand >= maxChannel)
+            if (payload.bounceCount > 20)
             {
                 payload.color = hitParams->MeshMaterial.Emissive / pdf;
                 return;
             }
 
-            payload.pdf = rand;
+            const vec3f& MatDiffuse = hitParams->MeshMaterial.Diffuse;
+            float maxChannel = max(MatDiffuse.z, max(MatDiffuse.x, MatDiffuse.y));
+            float rand = payload.RandGenerator();
+            if (rand >= maxChannel || maxChannel < 0.00001f)
+            {
+                payload.color = hitParams->MeshMaterial.Emissive / pdf;
+                return;
+            }
+
+            payload.pdf = maxChannel;
         }
 
         uint32_t u0 = optixGetPayload_0();
         uint32_t u1 = optixGetPayload_1();
-
-        const float t = optixGetRayTmax() - 0.00001f;
-        vec3f hitLocation = (vec3f)optixGetWorldRayOrigin() + scaleVector(optixGetWorldRayDirection(), t);
+        vec3f hitLocation = (vec3f)optixGetWorldRayOrigin() + scaleVector(optixGetWorldRayDirection(),
+                                                                          optixGetRayTmax() - 0.00001f);
 
         optixTrace(optixLaunchParams.traversable,
                    hitLocation,
@@ -171,7 +178,7 @@ namespace gdt {
     //------------------------------------------------------------------------------
     extern "C" __global__ void __raygen__renderFrame()
     {
-        const int spp = 4096;
+        const int spp = 1024;
 
         // compute a test pattern based on pixel ID
         const int ix = optixGetLaunchIndex().x;
@@ -220,6 +227,11 @@ namespace gdt {
                        SURFACE_RAY_TYPE,             // missSBTIndex
                        u0, u1 );
             totalColor += Payload.color;
+        }
+
+        if (hasNAN(totalColor) || hasINF(totalColor))
+        {
+            printf("[ERROR] Detected nan value or inf value in final result\n");
         }
 
         totalColor /= spp;
