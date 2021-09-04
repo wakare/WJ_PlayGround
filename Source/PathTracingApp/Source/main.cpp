@@ -23,24 +23,24 @@ bool BuildTestScene(SceneDesc& Scene)
 
     TriangleMeshMaterial RedMaterial;
     RedMaterial.Emissive = {0.0f, 0.0f, 0.0f};
-    RedMaterial.Diffuse = {1.0f, 0.0f, 0.0f};
+    RedMaterial.Diffuse = {0.99f, 0.0f, 0.0f};
 
     TriangleMeshMaterial GreenMaterial;
     GreenMaterial.Emissive = {0.0f, 0.0f, 0.0f};
-    GreenMaterial.Diffuse = {0.0f, 1.0f, 0.0f};
+    GreenMaterial.Diffuse = {0.0f, 0.99f, 0.0f};
 
     TriangleMeshMaterial WhiteMaterial;
     WhiteMaterial.Emissive = {0.0f, 0.0f, 0.0f};
-    WhiteMaterial.Diffuse = {1.0f, 1.0f, 1.0f};
+    WhiteMaterial.Diffuse = {0.99f, 0.99f, 0.99f};
 
     TriangleMeshMaterial BlueMaterial;
     BlueMaterial.Emissive = {0.0f, 0.0f, 0.0f};
-    BlueMaterial.Diffuse =  {0.0f, 0.0f, 1.0f};
+    BlueMaterial.Diffuse =  {0.0f, 0.0f, 0.99f};
 
     TriangleMesh planeTop;
     planeTop.addCube({0.0f, planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
     planeTop.meshMaterial = WhiteMaterial;
-    planeTop.meshMaterial.Emissive = {1.0f, 1.0f, 1.0f};
+    planeTop.meshMaterial.Emissive = {0.99f, 0.99f, 0.99f};
 
     TriangleMesh planeBottom;
     planeBottom.addCube({0.0f, -planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});

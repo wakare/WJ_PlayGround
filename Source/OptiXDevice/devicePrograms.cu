@@ -83,7 +83,7 @@ namespace gdt {
         RayPayload& payload = (*getPRD<RayPayload>());
         ++payload.bounceCount;
 
-        // printf("Current bounce count: %d\n", payload.bounceCount);
+        //printf("Current bounce count: %d\n", payload.bounceCount);
 
         const int   primID = optixGetPrimitiveIndex();
         const vec3i index = hitParams->index[primID];
@@ -98,15 +98,23 @@ namespace gdt {
                                                 sampleDirection, samplePdf);
 
         // Apply ray pdf
-        payload.color /= payload.pdf;
+        float pdf = payload.pdf;
+        if (payload.bounceCount > 5)
+        {
+            payload.color = hitParams->MeshMaterial.Emissive / pdf;
+            return;
+        }
 
         if (payload.bounceCount > 5)
         {
-            return;
-            float maxChannel = max(payload.color.z, max(payload.color.x, payload.color.y));
+            // return;
+            // float maxChannel = max(payload.color.z, max(payload.color.x, payload.color.y));
+            const vec3f& MatDiffuse = hitParams->MeshMaterial.Diffuse;
+            float maxChannel = max(MatDiffuse.z, max(MatDiffuse.x, MatDiffuse.y));
             float rand = payload.RandGenerator();
-            if (rand < maxChannel)
+            if (rand >= maxChannel)
             {
+                payload.color = hitParams->MeshMaterial.Emissive / pdf;
                 return;
             }
 
@@ -132,7 +140,7 @@ namespace gdt {
                    SURFACE_RAY_TYPE,             // missSBTIndex
                    u0, u1);
 
-        payload.color = colorMul(hitParams->MeshMaterial.Diffuse, payload.color) + hitParams->MeshMaterial.Emissive;
+        payload.color = (colorMul(hitParams->MeshMaterial.Diffuse, payload.color) + hitParams->MeshMaterial.Emissive) / pdf;
     }
 
     extern "C" __global__ void __anyhit__radiance()
@@ -163,7 +171,7 @@ namespace gdt {
     //------------------------------------------------------------------------------
     extern "C" __global__ void __raygen__renderFrame()
     {
-        const int spp = 16;
+        const int spp = 4096;
 
         // compute a test pattern based on pixel ID
         const int ix = optixGetLaunchIndex().x;
@@ -215,6 +223,9 @@ namespace gdt {
         }
 
         totalColor /= spp;
+        totalColor.x = clamp(totalColor.x, 0.0f, 1.0f);
+        totalColor.y = clamp(totalColor.y, 0.0f, 1.0f);
+        totalColor.z = clamp(totalColor.z, 0.0f, 1.0f);
 
         const int r = int(255.99f*totalColor.x);
         const int g = int(255.99f*totalColor.y);

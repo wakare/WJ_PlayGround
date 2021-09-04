@@ -28,6 +28,10 @@ struct TriangleMeshMaterial
         // Only implement diffuse sample
         assert(MaterialType == ETMMT_Diffuse);
 
+        //outDirection = normal;
+        //outPdf = 1.0f;
+        //return;
+
         const float rand0 = 2.0f * M_PI * RandGenerator();
         const float rand1 = 0.5f * M_PI * RandGenerator();
 
