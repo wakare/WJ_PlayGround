@@ -229,6 +229,7 @@ namespace gdt {
             totalColor += Payload.color;
         }
 
+        // Only for debug...
         if (hasNAN(totalColor) || hasINF(totalColor))
         {
             printf("[ERROR] Detected nan value or inf value in final result\n");

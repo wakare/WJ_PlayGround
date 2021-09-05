@@ -7,6 +7,7 @@
 
 #include "gdt/math/AffineSpace.h"
 #include "TriangleMeshMaterial.h"
+#include "IcoSphere.h"
 #include <vector>
 
 using namespace gdt;
@@ -15,7 +16,7 @@ struct TriangleMesh
 {
     /*! add a unit cube (subject to given xfm matrix) to the current
         triangleMesh */
-    void addUnitCube(const affine3f &xfm)
+    void addUnitCube(const affine3f& xfm)
     {
         /*
          *
@@ -49,6 +50,36 @@ struct TriangleMesh
             index.push_back(firstVertexID+vec3i(indices[3*i+0],
                                                 indices[3*i+1],
                                                 indices[3*i+2]));
+    }
+
+    void addSphere(const vec3f &center, const vec3f &size, int subDivideCount)
+    {
+        affine3f xfm;
+        xfm.p = center - 0.5f*size;
+        xfm.l.vx = vec3f(size.x,0.f,0.f);
+        xfm.l.vy = vec3f(0.f,size.y,0.f);
+        xfm.l.vz = vec3f(0.f,0.f,size.z);
+
+        // addUnitSphere(xfm, subDivideCount);
+
+        IcoSphere unitSphere(subDivideCount);
+        unitSphere.MakeIcoSphere();
+
+        int indexOffset = vertex.size();
+        for (const auto& sphereVertex : unitSphere.GetSphereVertices())
+        {
+            vertex.push_back(xfmPoint(xfm, {sphereVertex.x, sphereVertex.y, sphereVertex.z}));
+        }
+
+        for (const auto& Triangle : unitSphere.GetSphereIndices())
+        {
+            index.push_back(
+            {
+                            Triangle.indices[0] + indexOffset,
+                            Triangle.indices[1] + indexOffset,
+                            Triangle.indices[2] + indexOffset,
+            });
+        }
     }
 
     //! add aligned cube aith front-lower-left corner and size

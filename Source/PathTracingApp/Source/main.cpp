@@ -59,11 +59,20 @@ bool BuildTestScene(SceneDesc& Scene)
     planeBack.meshMaterial = WhiteMaterial;
 
     TriangleMesh Box;
-    Box.addCube(vec3f(0.f,0.f,0.f),vec3f(2.f,2.f,2.f));
+    Box.addCube(vec3f(1.0f,2.0f,0.0f),vec3f(1.0f,1.0f,1.0f));
     Box.setMaterial(BlueMaterial);
 
+    TriangleMesh Box2;
+    Box2.addCube(vec3f(-0.5f,-0.5f,2.0f),vec3f(2.5f,2.5f,1.0f));
+    Box2.setMaterial(BlueMaterial);
+
+    TriangleMesh Sphere;
+    Sphere.addSphere(vec3f(0.0f, 0.0f, 1.0f), vec3f(0.7f, 0.7f, 0.7f), 4);
+    Sphere.setMaterial(WhiteMaterial);
+    Sphere.meshMaterial.MaterialType = ETMMT_Specular;
+
     std::vector<TriangleMesh> models;
-    models.reserve(6);
+    models.reserve(7);
 
     models.push_back(planeBottom);
     models.push_back(planeTop);
@@ -71,6 +80,8 @@ bool BuildTestScene(SceneDesc& Scene)
     models.push_back(planeRight);
     models.push_back(planeBack);
     models.push_back(Box);
+    models.push_back(Box2);
+    models.push_back(Sphere);
 
     Scene.Meshes = models;
 
