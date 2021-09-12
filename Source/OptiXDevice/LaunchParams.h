@@ -35,6 +35,8 @@ namespace gdt
         } camera;
 
         OptixTraversableHandle traversable;
+        uint32_t spp;
+        uint32_t frameIndex;
     };
 
     struct RayPayload

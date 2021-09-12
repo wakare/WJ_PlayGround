@@ -27,7 +27,7 @@ namespace gdt
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        OptiXRenderer(const std::vector<TriangleMesh>& model);
+        OptiXRenderer(const std::vector<TriangleMesh>& model, uint32_t spp);
 
         /*! render one frame */
         void render();
@@ -74,6 +74,8 @@ namespace gdt
 
         /*! build an acceleration structure for the given triangle mesh */
         OptixTraversableHandle buildAccel(const std::vector<TriangleMesh>& model);
+
+        bool SetupLaunchParams(uint32_t spp);
 
     private:
         CUcontext           cudaContext;

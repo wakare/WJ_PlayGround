@@ -184,16 +184,17 @@ namespace gdt {
     //------------------------------------------------------------------------------
     extern "C" __global__ void __raygen__renderFrame()
     {
-        const int spp = 4;
+        const int spp = optixLaunchParams.spp;
 
         // compute a test pattern based on pixel ID
         const int ix = optixGetLaunchIndex().x;
         const int iy = optixGetLaunchIndex().y;
+        const int frameIndex = optixLaunchParams.frameIndex;
 
         const auto &camera = optixLaunchParams.camera;
 
         // normalized screen plane position, in [0,1]^2
-        const vec2f screen(vec2f(ix+.5f,iy+.5f)
+        const vec2f screen(vec2f(ix+.5f, iy+.5f)
                            / vec2f(optixLaunchParams.frame.size));
 
         // generate ray direction
@@ -205,7 +206,7 @@ namespace gdt {
         // won't matter, since this value will be overwritten by either
         // the miss or hit program, anyway
         RayPayload Payload;
-        Payload.RandGenerator = LCG<>(ix,iy);
+        Payload.RandGenerator = LCG<>((frameIndex * iy) & ix, (frameIndex * ix) & iy);
 
         //vec3f pixelColorPRD = vec3f(0.f);
         // the values we store the PRD pointer in:
@@ -235,12 +236,6 @@ namespace gdt {
             totalColor += Payload.color;
         }
 
-        // Only for debug...
-        if (hasNAN(totalColor) || hasINF(totalColor))
-        {
-            printf("[ERROR] Detected nan value or inf value in final result\n");
-        }
-
         totalColor /= spp;
         totalColor.x = clamp(totalColor.x, 0.0f, 1.0f);
         totalColor.y = clamp(totalColor.y, 0.0f, 1.0f);
@@ -250,13 +245,24 @@ namespace gdt {
         const int g = int(255.99f*totalColor.y);
         const int b = int(255.99f*totalColor.z);
 
+        // and write to frame buffer ...
+        const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.size.x;
+
+        // blend with previous frame result
+        // optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
+        const int previousR = (optixLaunchParams.frame.colorBuffer[fbIndex] & 0x000000ff);
+        const int previousG = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 8) & 0x000000ff);
+        const int previousB = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 16) & 0x000000ff);
+
+        const int finalR = clamp((previousR * frameIndex + r) / (frameIndex + 1), 0 , 255);
+        const int finalG = clamp((previousG * frameIndex + g) / (frameIndex + 1), 0 , 255);
+        const int finalB = clamp((previousB * frameIndex + b) / (frameIndex + 1), 0 , 255);
+
         // convert to 32-bit rgba value (we explicitly set alpha to 0xff
         // to make stb_image_write happy ...
         const uint32_t rgba = 0xff000000
-                              | (r<<0) | (g<<8) | (b<<16);
+                              | (finalR<<0) | (finalG<<8) | (finalB<<16);
 
-        // and write to frame buffer ...
-        const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.size.x;
         optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
     }
   

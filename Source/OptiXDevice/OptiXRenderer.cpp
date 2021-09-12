@@ -34,7 +34,7 @@ namespace gdt {
 
 /*! constructor - performs all setup, including initializing
   optix, creates module, pipeline, programs, SBT, etc. */
-    OptiXRenderer::OptiXRenderer(const std::vector<TriangleMesh>& model)
+    OptiXRenderer::OptiXRenderer(const std::vector<TriangleMesh>& model, uint32_t spp)
         : models(model)
     {
         initOptix();
@@ -52,7 +52,8 @@ namespace gdt {
         std::cout << "#osc: creating hitgroup programs ..." << std::endl;
         createHitgroupPrograms();
 
-        launchParams.traversable = buildAccel(models);
+        bool setupResult = SetupLaunchParams(spp);
+        assert(setupResult);
 
         std::cout << "#osc: setting up optix pipeline ..." << std::endl;
         createPipeline();
@@ -60,7 +61,6 @@ namespace gdt {
         std::cout << "#osc: building SBT ..." << std::endl;
         buildSBT();
 
-        launchParamsBuffer.alloc(sizeof(launchParams));
         std::cout << "#osc: context, module, pipeline, etc, all set up ..." << std::endl;
 
         std::cout << GDT_TERMINAL_GREEN;
@@ -328,6 +328,9 @@ namespace gdt {
         // already done:
         if (launchParams.frame.size.x == 0) return;
 
+        launchParams.frameIndex++;
+        printf("\rFrame: %u", launchParams.frameIndex);
+
         launchParamsBuffer.upload(&launchParams,1);
 
         OPTIX_CHECK(optixLaunch(/*! pipeline we're launching launch: */
@@ -509,7 +512,8 @@ namespace gdt {
         return asHandle;
     }
 
-    void OptiXRenderer::setCamera(const Camera &camera) {
+    void OptiXRenderer::setCamera(const Camera &camera)
+    {
         lastSetCamera = camera;
         launchParams.camera.position  = camera.from;
         launchParams.camera.direction = normalize(camera.at-camera.from);
@@ -521,5 +525,17 @@ namespace gdt {
         launchParams.camera.vertical
                 = cosFovy * normalize(cross(launchParams.camera.horizontal,
                                             launchParams.camera.direction));
+
+        launchParams.frameIndex = 0;
+    }
+
+    bool OptiXRenderer::SetupLaunchParams(uint32_t spp)
+    {
+        launchParams.traversable = buildAccel(models);
+        launchParams.spp = spp;
+        launchParams.frameIndex = 0;
+
+        launchParamsBuffer.alloc(sizeof(launchParams));
+        return true;
     }
 }

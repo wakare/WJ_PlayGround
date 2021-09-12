@@ -14,9 +14,10 @@ struct SampleWindow : public GLFCameraWindow
     SampleWindow(const std::string &title,
                  const std::vector<TriangleMesh> &model,
                  const Camera &camera,
-                 const float worldScale)
+                 const float worldScale,
+                 uint32_t spp)
             : GLFCameraWindow(title,camera.from,camera.at,camera.up,worldScale),
-              sample(model)
+              sample(model, spp)
     {
     }
 
@@ -94,13 +95,14 @@ struct SampleWindow : public GLFCameraWindow
 
 class OptiXTest {
 public:
-    OptiXTest(const std::vector<TriangleMesh>& model, const Camera& camera, int width = 800, int height = 600);
+    OptiXTest(const Camera& camera, int width = 800, int height = 600, uint32_t spp = 16);
     void Run();
     void Render();
     bool Download(uint32_t Result[]);
     bool OutputImageToFile(const std::string& output_filename);
 
 private:
+    const std::vector<TriangleMesh> BuildTestScene() const;
     SampleWindow Renderer;
     int width;
     int height;
