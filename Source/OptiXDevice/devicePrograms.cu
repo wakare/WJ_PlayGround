@@ -134,6 +134,12 @@ namespace gdt {
         vec3f hitLocation = (vec3f)optixGetWorldRayOrigin() + scaleVector(optixGetWorldRayDirection(),
                                                                           optixGetRayTmax() - 0.00001f);
 
+        //float2 baryCentricesCoord = optixGetTriangleBarycentrics();
+        //vec3f location =  baryCentricesCoord.x * v1 + baryCentricesCoord.y * v2 + (1 - baryCentricesCoord.x - baryCentricesCoord.y) * v0;
+        //printf ("location %f %f %f  bc %f %f %f  %f %f %f\n", hitLocation.x,hitLocation.y,hitLocation.z,
+        //        baryCentricesCoord.x, baryCentricesCoord.y, 1 - baryCentricesCoord.x-baryCentricesCoord.y,
+        //        location.x,location.y,location.z);
+
         optixTrace(optixLaunchParams.traversable,
                    hitLocation,
                    sampleDirection,
@@ -178,7 +184,7 @@ namespace gdt {
     //------------------------------------------------------------------------------
     extern "C" __global__ void __raygen__renderFrame()
     {
-        const int spp = 1024;
+        const int spp = 4;
 
         // compute a test pattern based on pixel ID
         const int ix = optixGetLaunchIndex().x;

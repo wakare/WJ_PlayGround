@@ -5,7 +5,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "PTUtil.h"
 
-bool PTUtil::WritePNGChannel(const char *output_filename, void *data, int channel, int width, int height)
+bool PTUtil::WritePNGChannel(const char *output_filename, const void *data, int channel, int width, int height)
 {
     if (channel != 3  && channel != 4)
     {

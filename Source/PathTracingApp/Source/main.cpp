@@ -1,5 +1,3 @@
-#include <cstdlib>
-
 #include "PTBasicDefine.h"
 #include "PTScene.h"
 #include "OptiXTest.h"
@@ -37,6 +35,16 @@ bool BuildTestScene(SceneDesc& Scene)
     BlueMaterial.Emissive = {0.0f, 0.0f, 0.0f};
     BlueMaterial.Diffuse =  {0.0f, 0.0f, 0.99f};
 
+    TriangleMeshMaterial ReflectMaterial;
+    ReflectMaterial.MaterialType = ETMMT_Specular;
+    ReflectMaterial.Diffuse = {0.99f, 0.99f, 0.99f};
+    ReflectMaterial.Emissive = {0.0f, 0.0f, 0.0f};
+
+    TriangleMeshMaterial RefractMaterial;
+    RefractMaterial.MaterialType = ETMMT_Refract;
+    RefractMaterial.Diffuse = {0.99f, 0.99f, 0.99f};
+    RefractMaterial.Emissive = {0.0f, 0.0f, 0.0f};
+
     TriangleMesh planeTop;
     planeTop.addCube({0.0f, planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
     planeTop.meshMaterial = WhiteMaterial;
@@ -58,47 +66,43 @@ bool BuildTestScene(SceneDesc& Scene)
     planeBack.addCube({0.0f, 0.0f, planeAxisOffset}, {planeSize, planeSize, planeHeight});
     planeBack.meshMaterial = WhiteMaterial;
 
-    TriangleMesh Box;
-    Box.addCube(vec3f(1.0f,2.0f,0.0f),vec3f(1.0f,1.0f,1.0f));
-    Box.setMaterial(BlueMaterial);
-
     TriangleMesh Box2;
     Box2.addCube(vec3f(-0.5f,-0.5f,2.0f),vec3f(2.5f,2.5f,1.0f));
     Box2.setMaterial(BlueMaterial);
 
-    TriangleMesh Sphere;
-    Sphere.addSphere(vec3f(0.0f, 0.0f, 1.0f), vec3f(0.7f, 0.7f, 0.7f), 4);
-    Sphere.setMaterial(WhiteMaterial);
-    Sphere.meshMaterial.MaterialType = ETMMT_Specular;
+    TriangleMesh ReflectSphere;
+    ReflectSphere.addSphere(vec3f(2.0f, 2.0f, 1.0f), vec3f(0.7f, 0.7f, 0.7f), 8);
+    ReflectSphere.setMaterial(ReflectMaterial);
+
+    TriangleMesh RefractSphere;
+    RefractSphere.addSphere(vec3f(-1.0f, 2.0f, -2.0f), vec3f(1.2f, 1.2f, 1.2f), 4);
+    RefractSphere.setMaterial(RefractMaterial);
 
     std::vector<TriangleMesh> models;
-    models.reserve(7);
 
     models.push_back(planeBottom);
     models.push_back(planeTop);
     models.push_back(planeLeft);
     models.push_back(planeRight);
     models.push_back(planeBack);
-    models.push_back(Box);
     models.push_back(Box2);
-    models.push_back(Sphere);
+    models.push_back(ReflectSphere);
 
     Scene.Meshes = models;
 
     return true;
 }
 
-
-int main()
+void DoCPURayTracing(int width, int height, int spp)
 {
-    //PTMain::PTScene Scene;
-    //Scene.DoPathTracing(800, 600, 64);
+    PT::PTRandom<float>::SetSeed(2);
 
-	PT::PTRandom<float>::SetSeed(2);
+    PTMain::PTScene Scene;
+    Scene.DoPathTracing(width, height, spp);
+}
 
-	int width = 800;
-	int height = 600;
-
+void DoOptixRayTracing(int width, int height, int spp)
+{
     SceneDesc TestScene;
     const bool bSuccess = BuildTestScene(TestScene);
     assert(bSuccess);
@@ -108,14 +112,16 @@ int main()
             /* up */vec3f(0.f,1.f,0.f) };
 
     OptiXTest Test(TestScene.Meshes, camera, width, height);
-    Test.Render();
+    Test.Run();
+}
 
-    uint32_t* DownloadBuffer = (uint32_t*) malloc (width * height * sizeof(uint32_t));
-    Test.Download(DownloadBuffer);
+int main()
+{
+	int width = 800;
+	int height = 600;
+    int spp = 512;
 
-    PTUtil::WritePNGChannel("OutputOptiXResult.png", DownloadBuffer, 4, width, height);
-
-    free (DownloadBuffer);
+    DoOptixRayTracing(width, height, spp);
 
 	return EXIT_SUCCESS;
 }

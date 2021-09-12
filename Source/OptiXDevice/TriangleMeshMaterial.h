@@ -13,7 +13,8 @@ enum ETriangleMeshMaterialType
 {
     ETMMT_Diffuse,
     ETMMT_Glossy,
-    ETMMT_Specular
+    ETMMT_Specular,
+    ETMMT_Refract,
 };
 
 struct TriangleMeshMaterial
@@ -47,9 +48,15 @@ struct TriangleMeshMaterial
 
             case ETMMT_Specular:
             {
-                // in direction + out direction = 2 * normal
                 outDirection = normalize(normalize(inDirection) + 2.0f * normalize(normal));
                 outPdf = 1.0f;
+            }
+            break;
+
+            case ETMMT_Refract:
+            {
+
+
             }
             break;
         }

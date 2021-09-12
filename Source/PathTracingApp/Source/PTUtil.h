@@ -9,7 +9,7 @@
 
 class PTUtil {
 public:
-    static bool WritePNGChannel(const char* output_filename, void* data, int channel, int width, int height);
+    static bool WritePNGChannel(const char* output_filename, const void *data, int channel, int width, int height);
 };
 
 
