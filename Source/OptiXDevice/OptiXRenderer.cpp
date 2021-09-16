@@ -344,10 +344,15 @@ namespace gdt {
                 launchParams.frame.size.y,
                 1
         ));
+
         // sync - make sure the frame is rendered before we download and
         // display (obviously, for a high-performance application you
         // want to use streams and double-buffering, but for this simple
         // example, this will have to do)
+        CUDA_SYNC_CHECK();
+
+        DoDenoise();
+
         CUDA_SYNC_CHECK();
     }
 
@@ -364,14 +369,36 @@ namespace gdt {
         launchParams.frame.size  = newSize;
         launchParams.frame.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
 
+        sourceFrameBuffer.resize(newSize.x*newSize.y*sizeof(float3));
+        launchParams.sourceFrame.size = newSize;
+        launchParams.sourceFrame.source = (float3*)sourceFrameBuffer.d_pointer();
+
         // and re-set the camera, since aspect may have changed
         setCamera(lastSetCamera);
     }
 
 /*! download the rendered color buffer */
-    void OptiXRenderer::downloadPixels(uint32_t h_pixels[]) {
+    /*void OptiXRenderer::downloadPixels(uint32_t h_pixels[]) {
         colorBuffer.download(h_pixels,
                              launchParams.frame.size.x*launchParams.frame.size.y);
+    }*/
+
+    void OptiXRenderer::downloadPixels(uint32_t h_pixels[]) {
+
+        const size_t totalSize = launchParams.frame.size.x*launchParams.frame.size.y;
+        std::vector<float3> sourceData(totalSize);
+
+        sourceFrameBuffer.download(sourceData.data(),
+                             launchParams.frame.size.x*launchParams.frame.size.y);
+
+        for (size_t i = 0; i < totalSize; ++i)
+        {
+            int r = sourceData[i].x * 255.99f;
+            int g = sourceData[i].y * 255.99f;
+            int b = sourceData[i].z * 255.99f;
+
+            h_pixels[i] = 0xff000000  | (r<<0) | (g<<8) | (b<<16);
+        }
     }
 
     OptixTraversableHandle OptiXRenderer::buildAccel(const std::vector<TriangleMesh>& models) {
@@ -537,5 +564,60 @@ namespace gdt {
 
         launchParamsBuffer.alloc(sizeof(launchParams));
         return true;
+    }
+
+    void OptiXRenderer::DoDenoise()
+    {
+        OptixDenoiserOptions denoiserOption;
+        denoiserOption.guideAlbedo = 1;
+        denoiserOption.guideNormal = 0;
+
+        const int width = launchParams.sourceFrame.size.x;
+        const int height = launchParams.sourceFrame.size.y;
+
+        OptixDenoiserSizes denoiserSize;
+
+        OPTIX_CHECK(optixDenoiserCreate(optixContext, OptixDenoiserModelKind::OPTIX_DENOISER_MODEL_KIND_LDR, &denoiserOption, &denoiser));
+        OPTIX_CHECK(optixDenoiserComputeMemoryResources(denoiser, width, height, &denoiserSize));
+
+        denoiserStateBuffer.alloc(denoiserSize.stateSizeInBytes);
+
+        size_t scratchBufferSize = std::max(denoiserSize.withOverlapScratchSizeInBytes,
+                 denoiserSize.withoutOverlapScratchSizeInBytes);
+        denoiserScratchBuffer.alloc(scratchBufferSize);
+
+        OPTIX_CHECK(optixDenoiserSetup(denoiser, stream, width, height, denoiserStateBuffer.d_pointer(),
+                                       denoiserSize.stateSizeInBytes, denoiserScratchBuffer.d_pointer(),
+                                       scratchBufferSize));
+
+        OptixDenoiserParams denoiserParams;
+        denoiserParams.denoiseAlpha = 0;
+
+        OptixDenoiserGuideLayer denoiserGuideLayer;
+        denoiserGuideLayer.albedo.width = width;
+        denoiserGuideLayer.albedo.height = height;
+        denoiserGuideLayer.albedo.data = sourceFrameBuffer.d_pointer();
+        denoiserGuideLayer.albedo.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT3;
+        denoiserGuideLayer.albedo.pixelStrideInBytes = sizeof(float3);
+        denoiserGuideLayer.albedo.rowStrideInBytes = width * sizeof(float3);
+
+        CUDABuffer OutputBuffer;
+        OutputBuffer.alloc(width * height * sizeof(float3));
+
+        OptixDenoiserLayer denoiserLayer;
+        denoiserLayer.input = denoiserGuideLayer.albedo;
+        denoiserLayer.output = denoiserGuideLayer.albedo;
+        denoiserLayer.output.data = OutputBuffer.d_pointer();
+
+        OPTIX_CHECK(optixDenoiserInvoke(denoiser, stream, &denoiserParams, denoiserStateBuffer.d_pointer(),
+                                        denoiserSize.stateSizeInBytes, &denoiserGuideLayer, &denoiserLayer, 1, 0, 0,
+                                        denoiserScratchBuffer.d_pointer(),
+                                        scratchBufferSize));
+
+
+        sourceFrameBuffer.free();
+        sourceFrameBuffer = OutputBuffer;
+
+        OPTIX_CHECK(optixDenoiserDestroy(denoiser));
     }
 }

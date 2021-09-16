@@ -109,7 +109,7 @@ namespace gdt {
 
         // Apply ray pdf
         float pdf = payload.pdf;
-        if (payload.bounceCount > 5)
+        //if (payload.bounceCount > 5)
         {
             if (payload.bounceCount > 20)
             {
@@ -245,11 +245,9 @@ namespace gdt {
         const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.size.x;
 
         // blend with previous frame result
-        // optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
-        const float inv256 = 1.0f / 256.0f;
-        const float previousR = (optixLaunchParams.frame.colorBuffer[fbIndex] & 0x000000ff) * inv256;
-        const float previousG = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 8) & 0x000000ff) * inv256;
-        const float previousB = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 16) & 0x000000ff) * inv256;
+        const float previousR = optixLaunchParams.sourceFrame.source[fbIndex].x;
+        const float previousG = optixLaunchParams.sourceFrame.source[fbIndex].y;
+        const float previousB = optixLaunchParams.sourceFrame.source[fbIndex].z;
 
         float alpha = (1.0f * frameIndex) / (frameIndex + 1);
         float oneMinusAlpha = 1.0f - alpha;
@@ -257,9 +255,13 @@ namespace gdt {
         float finalG = alpha * previousG + oneMinusAlpha * totalColor.y;
         float finalB = alpha * previousB + oneMinusAlpha * totalColor.z;
 
-        const int finalRInt = int(255.99f * finalR + 0.5f);
-        const int finalGInt = int(255.99f * finalG + 0.5f);
-        const int finalBInt = int(255.99f * finalB + 0.5f);
+        optixLaunchParams.sourceFrame.source[fbIndex].x = finalR;
+        optixLaunchParams.sourceFrame.source[fbIndex].y = finalG;
+        optixLaunchParams.sourceFrame.source[fbIndex].z = finalB;
+
+        const int finalRInt = int(255.99f * finalR);
+        const int finalGInt = int(255.99f * finalG);
+        const int finalBInt = int(255.99f * finalB);
 
         // convert to 32-bit rgba value (we explicitly set alpha to 0xff
         // to make stb_image_write happy ...
@@ -267,12 +269,6 @@ namespace gdt {
                               | (finalRInt<<0) | (finalGInt<<8) | (finalBInt<<16);
 
         optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
-
-        //if (fbIndex == 12345)
-        //{
-        //    printf("fbIndex = %u frameIndex: %d  old rgb (%f, %f, %f) current frame (%f, %f, %f) final rgb (%d, %d, %d)\n",
-        //           fbIndex, frameIndex, previousR, previousG, previousB, totalColor.x, totalColor.y, totalColor.z, finalRInt, finalGInt, finalBInt);
-        //}
     }
   
 } // ::osc

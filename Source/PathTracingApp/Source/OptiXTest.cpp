@@ -28,7 +28,7 @@ bool OptiXTest::OutputImageToFile(const std::string &output_filename)
     uint32_t* downloadBuffer = (uint32_t*) malloc (width * height * sizeof(uint32_t));
     Renderer.sample.downloadPixels(downloadBuffer);
 
-    bool result = PTUtil::WritePNGChannel("OutputOptiXResult.png", downloadBuffer, 4, width, height);
+    bool result = PTUtil::WritePNGChannel(output_filename.c_str(), downloadBuffer, 4, width, height);
     free (downloadBuffer);
     return result;
 }

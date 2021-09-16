@@ -69,6 +69,9 @@ namespace gdt
         /*! assembles the full pipeline of all programs */
         void createPipeline();
 
+        /*! optix ai denoiser */
+        void DoDenoise();
+
         /*! constructs the shader binding table */
         void buildSBT();
 
@@ -106,13 +109,19 @@ namespace gdt
         CUDABuffer hitgroupRecordsBuffer;
         OptixShaderBindingTable sbt = {};
 
+        OptixDenoiser denoiser;
+
         /*! @{ our launch parameters, on the host, and the buffer to store
             them on the device */
         LaunchParams launchParams;
         CUDABuffer   launchParamsBuffer;
         /*! @} */
 
+        CUDABuffer sourceFrameBuffer;
         CUDABuffer colorBuffer;
+
+        CUDABuffer denoiserStateBuffer;
+        CUDABuffer denoiserScratchBuffer;
 
         /*! the camera we are to render with. */
         Camera lastSetCamera;

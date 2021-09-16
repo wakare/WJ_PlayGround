@@ -24,6 +24,12 @@ namespace gdt
     {
         struct
         {
+            float3* source;
+            vec2i size;
+        } sourceFrame;
+
+        struct
+        {
             uint32_t *colorBuffer;
             vec2i     size;
         } frame;
