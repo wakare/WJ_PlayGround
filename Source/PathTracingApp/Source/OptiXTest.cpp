@@ -13,11 +13,13 @@ OptiXTest::OptiXTest(const Camera& camera, int width, int height, uint32_t spp) 
     Renderer.resize({width, height});
 }
 
-bool OptiXTest::Download(uint32_t *Result) {
+bool OptiXTest::Download(uint32_t *Result)
+{
     return true;
 }
 
-void OptiXTest::Render() {
+void OptiXTest::Render()
+{
     Renderer.render();
 }
 
@@ -31,7 +33,8 @@ bool OptiXTest::OutputImageToFile(const std::string &output_filename)
     return result;
 }
 
-void OptiXTest::Run() {
+void OptiXTest::Run()
+{
     Renderer.run();
 }
 

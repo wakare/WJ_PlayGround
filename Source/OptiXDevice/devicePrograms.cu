@@ -206,7 +206,7 @@ namespace gdt {
         // won't matter, since this value will be overwritten by either
         // the miss or hit program, anyway
         RayPayload Payload;
-        Payload.RandGenerator = LCG<>((frameIndex * iy) & ix, (frameIndex * ix) & iy);
+        Payload.RandGenerator = LCG<>((frameIndex * 21321424 * iy) ^ ix, (frameIndex * 92374894 * ix) ^ iy);
 
         //vec3f pixelColorPRD = vec3f(0.f);
         // the values we store the PRD pointer in:
@@ -241,29 +241,38 @@ namespace gdt {
         totalColor.y = clamp(totalColor.y, 0.0f, 1.0f);
         totalColor.z = clamp(totalColor.z, 0.0f, 1.0f);
 
-        const int r = int(255.99f*totalColor.x);
-        const int g = int(255.99f*totalColor.y);
-        const int b = int(255.99f*totalColor.z);
-
         // and write to frame buffer ...
         const uint32_t fbIndex = ix+iy*optixLaunchParams.frame.size.x;
 
         // blend with previous frame result
         // optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
-        const int previousR = (optixLaunchParams.frame.colorBuffer[fbIndex] & 0x000000ff);
-        const int previousG = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 8) & 0x000000ff);
-        const int previousB = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 16) & 0x000000ff);
+        const float inv256 = 1.0f / 256.0f;
+        const float previousR = (optixLaunchParams.frame.colorBuffer[fbIndex] & 0x000000ff) * inv256;
+        const float previousG = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 8) & 0x000000ff) * inv256;
+        const float previousB = ((optixLaunchParams.frame.colorBuffer[fbIndex] >> 16) & 0x000000ff) * inv256;
 
-        const int finalR = clamp((previousR * frameIndex + r) / (frameIndex + 1), 0 , 255);
-        const int finalG = clamp((previousG * frameIndex + g) / (frameIndex + 1), 0 , 255);
-        const int finalB = clamp((previousB * frameIndex + b) / (frameIndex + 1), 0 , 255);
+        float alpha = (1.0f * frameIndex) / (frameIndex + 1);
+        float oneMinusAlpha = 1.0f - alpha;
+        float finalR = alpha * previousR + oneMinusAlpha * totalColor.x;
+        float finalG = alpha * previousG + oneMinusAlpha * totalColor.y;
+        float finalB = alpha * previousB + oneMinusAlpha * totalColor.z;
+
+        const int finalRInt = int(255.99f * finalR + 0.5f);
+        const int finalGInt = int(255.99f * finalG + 0.5f);
+        const int finalBInt = int(255.99f * finalB + 0.5f);
 
         // convert to 32-bit rgba value (we explicitly set alpha to 0xff
         // to make stb_image_write happy ...
         const uint32_t rgba = 0xff000000
-                              | (finalR<<0) | (finalG<<8) | (finalB<<16);
+                              | (finalRInt<<0) | (finalGInt<<8) | (finalBInt<<16);
 
         optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
+
+        //if (fbIndex == 12345)
+        //{
+        //    printf("fbIndex = %u frameIndex: %d  old rgb (%f, %f, %f) current frame (%f, %f, %f) final rgb (%d, %d, %d)\n",
+        //           fbIndex, frameIndex, previousR, previousG, previousB, totalColor.x, totalColor.y, totalColor.z, finalRInt, finalGInt, finalBInt);
+        //}
     }
   
 } // ::osc

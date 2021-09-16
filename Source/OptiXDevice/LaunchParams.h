@@ -22,12 +22,14 @@ namespace gdt
 
     struct LaunchParams
     {
-        struct {
+        struct
+        {
             uint32_t *colorBuffer;
             vec2i     size;
         } frame;
 
-        struct {
+        struct
+        {
             vec3f position;
             vec3f direction;
             vec3f horizontal;
