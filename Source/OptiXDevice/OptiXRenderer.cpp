@@ -569,7 +569,7 @@ namespace gdt {
     void OptiXRenderer::DoDenoise()
     {
         OptixDenoiserOptions denoiserOption;
-        denoiserOption.guideAlbedo = 1;
+        denoiserOption.guideAlbedo = 0;
         denoiserOption.guideNormal = 0;
 
         const int width = launchParams.sourceFrame.size.x;
@@ -593,21 +593,25 @@ namespace gdt {
         OptixDenoiserParams denoiserParams;
         denoiserParams.denoiseAlpha = 0;
 
-        OptixDenoiserGuideLayer denoiserGuideLayer;
-        denoiserGuideLayer.albedo.width = width;
-        denoiserGuideLayer.albedo.height = height;
-        denoiserGuideLayer.albedo.data = sourceFrameBuffer.d_pointer();
-        denoiserGuideLayer.albedo.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT3;
-        denoiserGuideLayer.albedo.pixelStrideInBytes = sizeof(float3);
-        denoiserGuideLayer.albedo.rowStrideInBytes = width * sizeof(float3);
+        OptixDenoiserGuideLayer denoiserGuideLayer = {};
 
         CUDABuffer OutputBuffer;
         OutputBuffer.alloc(width * height * sizeof(float3));
 
         OptixDenoiserLayer denoiserLayer;
-        denoiserLayer.input = denoiserGuideLayer.albedo;
-        denoiserLayer.output = denoiserGuideLayer.albedo;
+        denoiserLayer.input.width = width;
+        denoiserLayer.input.height = height;
+        denoiserLayer.input.data = sourceFrameBuffer.d_pointer();
+        denoiserLayer.input.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT3;
+        denoiserLayer.input.pixelStrideInBytes = sizeof(float3);
+        denoiserLayer.input.rowStrideInBytes = width * sizeof(float3);
+
+        denoiserLayer.output.width = width;
+        denoiserLayer.output.height = height;
         denoiserLayer.output.data = OutputBuffer.d_pointer();
+        denoiserLayer.output.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT3;
+        denoiserLayer.output.pixelStrideInBytes = sizeof(float3);
+        denoiserLayer.output.rowStrideInBytes = width * sizeof(float3);
 
         OPTIX_CHECK(optixDenoiserInvoke(denoiser, stream, &denoiserParams, denoiserStateBuffer.d_pointer(),
                                         denoiserSize.stateSizeInBytes, &denoiserGuideLayer, &denoiserLayer, 1, 0, 0,
@@ -615,8 +619,8 @@ namespace gdt {
                                         scratchBufferSize));
 
 
-        sourceFrameBuffer.free();
-        sourceFrameBuffer = OutputBuffer;
+        cudaMemcpy((void*)sourceFrameBuffer.d_pointer(), (void*)OutputBuffer.d_pointer(), width * height * sizeof(float3), cudaMemcpyDeviceToDevice);
+        OutputBuffer.free();
 
         OPTIX_CHECK(optixDenoiserDestroy(denoiser));
     }
