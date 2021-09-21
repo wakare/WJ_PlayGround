@@ -70,7 +70,7 @@ namespace gdt
         void createPipeline();
 
         /*! optix ai denoiser */
-        void DoDenoise();
+        void denoise();
 
         /*! constructs the shader binding table */
         void buildSBT();
@@ -78,7 +78,9 @@ namespace gdt
         /*! build an acceleration structure for the given triangle mesh */
         OptixTraversableHandle buildAccel(const std::vector<TriangleMesh>& model);
 
-        bool SetupLaunchParams(uint32_t spp);
+        bool setupLaunchParams(uint32_t spp);
+
+        void computeFinalPixelColors();
 
     private:
         CUcontext           cudaContext;
@@ -118,7 +120,8 @@ namespace gdt
         /*! @} */
 
         CUDABuffer sourceFrameBuffer;
-        CUDABuffer colorBuffer;
+        CUDABuffer denoiseFrameBuffer;
+        CUDABuffer finalColorBuffer;
 
         CUDABuffer denoiserStateBuffer;
         CUDABuffer denoiserScratchBuffer;
@@ -132,6 +135,9 @@ namespace gdt
         std::vector<CUDABuffer> indexBuffer;
         //! buffer that keeps the (final, compacted) accel structure
         CUDABuffer asBuffer;
+
+        // Enable denoiser?
+        bool enableDenoiser;
     };
 }
 

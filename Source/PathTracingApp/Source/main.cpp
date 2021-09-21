@@ -20,16 +20,16 @@ void DoOptixRayTracing(int width, int height, int spp)
             /* up */vec3f(0.f,1.f,0.f) };
 
     OptiXTest Test(camera, width, height, spp);
-    // Test.Run();
-    Test.Render();
-    Test.OutputImageToFile("OptixOutputImage.png");
+    Test.Run();
+    //Test.Render();
+    //Test.OutputImageToFile("OptixOutputImage.png");
 }
 
 int main()
 {
 	int width = 800;
 	int height = 600;
-    int spp = 64;
+    int spp = 1;
 
     DoOptixRayTracing(width, height, spp);
 

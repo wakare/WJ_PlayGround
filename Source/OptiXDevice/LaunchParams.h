@@ -24,7 +24,7 @@ namespace gdt
     {
         struct
         {
-            float3* source;
+            float4* source;
             vec2i size;
         } sourceFrame;
 

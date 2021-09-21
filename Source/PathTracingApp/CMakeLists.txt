@@ -33,6 +33,7 @@ target_link_libraries(PathTracingApp
         Eigen3::Eigen
         OptiXDevice
         PTLib
+        toneMap
         ${optix_LIBRARY}
         ${CUDA_LIBRARIES}
         ${CUDA_CUDA_LIBRARY}

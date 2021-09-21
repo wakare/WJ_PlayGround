@@ -258,17 +258,6 @@ namespace gdt {
         optixLaunchParams.sourceFrame.source[fbIndex].x = finalR;
         optixLaunchParams.sourceFrame.source[fbIndex].y = finalG;
         optixLaunchParams.sourceFrame.source[fbIndex].z = finalB;
-
-        const int finalRInt = int(255.99f * finalR);
-        const int finalGInt = int(255.99f * finalG);
-        const int finalBInt = int(255.99f * finalB);
-
-        // convert to 32-bit rgba value (we explicitly set alpha to 0xff
-        // to make stb_image_write happy ...
-        const uint32_t rgba = 0xff000000
-                              | (finalRInt<<0) | (finalGInt<<8) | (finalBInt<<16);
-
-        optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
     }
   
 } // ::osc

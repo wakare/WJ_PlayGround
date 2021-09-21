@@ -36,6 +36,7 @@ namespace gdt {
   optix, creates module, pipeline, programs, SBT, etc. */
     OptiXRenderer::OptiXRenderer(const std::vector<TriangleMesh>& model, uint32_t spp)
         : models(model)
+        , enableDenoiser(true)
     {
         initOptix();
 
@@ -52,7 +53,7 @@ namespace gdt {
         std::cout << "#osc: creating hitgroup programs ..." << std::endl;
         createHitgroupPrograms();
 
-        bool setupResult = SetupLaunchParams(spp);
+        bool setupResult = setupLaunchParams(spp);
         assert(setupResult);
 
         std::cout << "#osc: setting up optix pipeline ..." << std::endl;
@@ -345,14 +346,14 @@ namespace gdt {
                 1
         ));
 
+        denoise();
+
+        computeFinalPixelColors();
+
         // sync - make sure the frame is rendered before we download and
         // display (obviously, for a high-performance application you
         // want to use streams and double-buffering, but for this simple
         // example, this will have to do)
-        CUDA_SYNC_CHECK();
-
-        DoDenoise();
-
         CUDA_SYNC_CHECK();
     }
 
@@ -362,43 +363,27 @@ namespace gdt {
         if (newSize.x == 0 | newSize.y == 0) return;
 
         // resize our cuda frame buffer
-        colorBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
+        finalColorBuffer.resize(newSize.x * newSize.y * sizeof(uint32_t));
 
         // update the launch parameters that we'll pass to the optix
         // launch:
         launchParams.frame.size  = newSize;
-        launchParams.frame.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
+        launchParams.frame.colorBuffer = (uint32_t*)finalColorBuffer.d_pointer();
 
-        sourceFrameBuffer.resize(newSize.x*newSize.y*sizeof(float3));
+        sourceFrameBuffer.resize(newSize.x*newSize.y*sizeof(float4));
         launchParams.sourceFrame.size = newSize;
-        launchParams.sourceFrame.source = (float3*)sourceFrameBuffer.d_pointer();
+        launchParams.sourceFrame.source = (float4*)sourceFrameBuffer.d_pointer();
+
+        denoiseFrameBuffer.resize(newSize.x*newSize.y*sizeof(float4));
 
         // and re-set the camera, since aspect may have changed
         setCamera(lastSetCamera);
     }
 
 /*! download the rendered color buffer */
-    /*void OptiXRenderer::downloadPixels(uint32_t h_pixels[]) {
-        colorBuffer.download(h_pixels,
-                             launchParams.frame.size.x*launchParams.frame.size.y);
-    }*/
-
     void OptiXRenderer::downloadPixels(uint32_t h_pixels[]) {
-
-        const size_t totalSize = launchParams.frame.size.x*launchParams.frame.size.y;
-        std::vector<float3> sourceData(totalSize);
-
-        sourceFrameBuffer.download(sourceData.data(),
-                             launchParams.frame.size.x*launchParams.frame.size.y);
-
-        for (size_t i = 0; i < totalSize; ++i)
-        {
-            int r = sourceData[i].x * 255.99f;
-            int g = sourceData[i].y * 255.99f;
-            int b = sourceData[i].z * 255.99f;
-
-            h_pixels[i] = 0xff000000  | (r<<0) | (g<<8) | (b<<16);
-        }
+        finalColorBuffer.download(h_pixels,
+                                  launchParams.frame.size.x * launchParams.frame.size.y);
     }
 
     OptixTraversableHandle OptiXRenderer::buildAccel(const std::vector<TriangleMesh>& models) {
@@ -462,8 +447,8 @@ namespace gdt {
 
         OptixAccelBuildOptions accelOptions = {};
         accelOptions.buildFlags             = OPTIX_BUILD_FLAG_NONE
-                                              | OPTIX_BUILD_FLAG_ALLOW_COMPACTION
-                ;
+                                              | OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+
         accelOptions.motionOptions.numKeys  = 1;
         accelOptions.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
@@ -504,12 +489,9 @@ namespace gdt {
                                     triangleInputs.size(),
                                     tempBuffer.d_pointer(),
                                     tempBuffer.sizeInBytes,
-
                                     outputBuffer.d_pointer(),
                                     outputBuffer.sizeInBytes,
-
                                     &asHandle,
-
                                     &emitDesc,1
         ));
         CUDA_SYNC_CHECK();
@@ -556,7 +538,7 @@ namespace gdt {
         launchParams.frameIndex = 0;
     }
 
-    bool OptiXRenderer::SetupLaunchParams(uint32_t spp)
+    bool OptiXRenderer::setupLaunchParams(uint32_t spp)
     {
         launchParams.traversable = buildAccel(models);
         launchParams.spp = spp;
@@ -566,62 +548,62 @@ namespace gdt {
         return true;
     }
 
-    void OptiXRenderer::DoDenoise()
+    void OptiXRenderer::denoise()
     {
-        OptixDenoiserOptions denoiserOption;
-        denoiserOption.guideAlbedo = 0;
-        denoiserOption.guideNormal = 0;
-
         const int width = launchParams.sourceFrame.size.x;
         const int height = launchParams.sourceFrame.size.y;
 
-        OptixDenoiserSizes denoiserSize;
+        if (enableDenoiser)
+        {
+            OptixDenoiserOptions denoiserOption;
+            denoiserOption.guideAlbedo = 0;
+            denoiserOption.guideNormal = 0;
+            OptixDenoiserSizes denoiserSize;
 
-        OPTIX_CHECK(optixDenoiserCreate(optixContext, OptixDenoiserModelKind::OPTIX_DENOISER_MODEL_KIND_LDR, &denoiserOption, &denoiser));
-        OPTIX_CHECK(optixDenoiserComputeMemoryResources(denoiser, width, height, &denoiserSize));
+            OPTIX_CHECK(optixDenoiserCreate(optixContext, OptixDenoiserModelKind::OPTIX_DENOISER_MODEL_KIND_LDR, &denoiserOption, &denoiser));
+            OPTIX_CHECK(optixDenoiserComputeMemoryResources(denoiser, width, height, &denoiserSize));
 
-        denoiserStateBuffer.alloc(denoiserSize.stateSizeInBytes);
+            denoiserStateBuffer.resize(denoiserSize.stateSizeInBytes);
 
-        size_t scratchBufferSize = std::max(denoiserSize.withOverlapScratchSizeInBytes,
-                 denoiserSize.withoutOverlapScratchSizeInBytes);
-        denoiserScratchBuffer.alloc(scratchBufferSize);
+            size_t scratchBufferSize = std::max(denoiserSize.withOverlapScratchSizeInBytes,
+                                                denoiserSize.withoutOverlapScratchSizeInBytes);
+            denoiserScratchBuffer.resize(scratchBufferSize);
 
-        OPTIX_CHECK(optixDenoiserSetup(denoiser, stream, width, height, denoiserStateBuffer.d_pointer(),
-                                       denoiserSize.stateSizeInBytes, denoiserScratchBuffer.d_pointer(),
-                                       scratchBufferSize));
+            OPTIX_CHECK(optixDenoiserSetup(denoiser, stream, width, height, denoiserStateBuffer.d_pointer(),
+                                           denoiserSize.stateSizeInBytes, denoiserScratchBuffer.d_pointer(),
+                                           scratchBufferSize));
 
-        OptixDenoiserParams denoiserParams;
-        denoiserParams.denoiseAlpha = 0;
+            OptixDenoiserParams denoiserParams;
+            denoiserParams.denoiseAlpha = 0;
 
-        OptixDenoiserGuideLayer denoiserGuideLayer = {};
+            OptixDenoiserGuideLayer denoiserGuideLayer = {};
 
-        CUDABuffer OutputBuffer;
-        OutputBuffer.alloc(width * height * sizeof(float3));
+            OptixDenoiserLayer denoiserLayer;
+            denoiserLayer.input.width = width;
+            denoiserLayer.input.height = height;
+            denoiserLayer.input.data = sourceFrameBuffer.d_pointer();
+            denoiserLayer.input.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT4;
+            denoiserLayer.input.pixelStrideInBytes = sizeof(float4);
+            denoiserLayer.input.rowStrideInBytes = width * sizeof(float4);
 
-        OptixDenoiserLayer denoiserLayer;
-        denoiserLayer.input.width = width;
-        denoiserLayer.input.height = height;
-        denoiserLayer.input.data = sourceFrameBuffer.d_pointer();
-        denoiserLayer.input.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT3;
-        denoiserLayer.input.pixelStrideInBytes = sizeof(float3);
-        denoiserLayer.input.rowStrideInBytes = width * sizeof(float3);
+            denoiserLayer.output.width = width;
+            denoiserLayer.output.height = height;
+            denoiserLayer.output.data = denoiseFrameBuffer.d_pointer();
+            denoiserLayer.output.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT4;
+            denoiserLayer.output.pixelStrideInBytes = sizeof(float4);
+            denoiserLayer.output.rowStrideInBytes = width * sizeof(float4);
 
-        denoiserLayer.output.width = width;
-        denoiserLayer.output.height = height;
-        denoiserLayer.output.data = OutputBuffer.d_pointer();
-        denoiserLayer.output.format = OptixPixelFormat::OPTIX_PIXEL_FORMAT_FLOAT3;
-        denoiserLayer.output.pixelStrideInBytes = sizeof(float3);
-        denoiserLayer.output.rowStrideInBytes = width * sizeof(float3);
+            OPTIX_CHECK(optixDenoiserInvoke(denoiser, stream, &denoiserParams, denoiserStateBuffer.d_pointer(),
+                                            denoiserSize.stateSizeInBytes, &denoiserGuideLayer, &denoiserLayer, 1, 0, 0,
+                                            denoiserScratchBuffer.d_pointer(),
+                                            scratchBufferSize));
 
-        OPTIX_CHECK(optixDenoiserInvoke(denoiser, stream, &denoiserParams, denoiserStateBuffer.d_pointer(),
-                                        denoiserSize.stateSizeInBytes, &denoiserGuideLayer, &denoiserLayer, 1, 0, 0,
-                                        denoiserScratchBuffer.d_pointer(),
-                                        scratchBufferSize));
-
-
-        cudaMemcpy((void*)sourceFrameBuffer.d_pointer(), (void*)OutputBuffer.d_pointer(), width * height * sizeof(float3), cudaMemcpyDeviceToDevice);
-        OutputBuffer.free();
-
-        OPTIX_CHECK(optixDenoiserDestroy(denoiser));
+            OPTIX_CHECK(optixDenoiserDestroy(denoiser));
+        }
+        else
+        {
+            cudaMemcpy((void*)denoiseFrameBuffer.d_pointer(), (void*)sourceFrameBuffer.d_pointer(),
+                       width * height * sizeof(float4), cudaMemcpyKind::cudaMemcpyDeviceToDevice);
+        }
     }
 }
