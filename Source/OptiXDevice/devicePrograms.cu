@@ -85,15 +85,13 @@ namespace gdt {
 
     extern "C" __global__ void __closesthit__radiance()
     {
-        /*const int   primID = optixGetPrimitiveIndex();
-        vec3f &prd = *(vec3f*)getPRD<vec3f>();
-        prd = gdt::randomColor(primID);*/
-
         const HitGroupUserParams* hitParams = (const HitGroupUserParams*)optixGetSbtDataPointer();
         RayPayload& payload = (*getPRD<RayPayload>());
         ++payload.bounceCount;
+        //printf("[DEBUG] Bounce count: %d\n", payload.bounceCount);
 
-        //printf("Current bounce count: %d\n", payload.bounceCount);
+        bool bDebugPixelColor = (payload.screenX == 1199 && payload.screenY == 799);
+        //bDebugPixelColor = false;
 
         const int   primID = optixGetPrimitiveIndex();
         const vec3i index = hitParams->index[primID];
@@ -103,13 +101,18 @@ namespace gdt {
         const vec3f normal = normalize(cross(v1 - v0, v0 - v2));
 
         vec3f sampleDirection = vec3f(0.0f, 0.0f, 0.0f);
+        vec3f RayDirection = normalize((vec3f)optixGetWorldRayDirection());
         float samplePdf = 0.0f;
-        hitParams->MeshMaterial.SampleDirection(payload.RandGenerator, normal, optixGetWorldRayDirection(),
-                                                sampleDirection, samplePdf);
+        float rayOffset = 0.0f;
+        hitParams->MeshMaterial.SampleDirection(payload.RandGenerator, normal, RayDirection,
+                                                sampleDirection, samplePdf, rayOffset);
+        if (bDebugPixelColor)
+        {
+            printf("Current ray.direction %f %f %f\n", sampleDirection.x, sampleDirection.y, sampleDirection.z);
+        }
 
         // Apply ray pdf
-        float pdf = payload.pdf;
-        //if (payload.bounceCount > 5)
+        float pdf = payload.pdf * samplePdf;
         {
             if (payload.bounceCount > 20)
             {
@@ -123,6 +126,11 @@ namespace gdt {
             if (rand >= maxChannel || maxChannel < 0.00001f)
             {
                 payload.color = hitParams->MeshMaterial.Emissive / pdf;
+                if (bDebugPixelColor && hitParams->MeshMaterial.MaterialType == ETriangleMeshMaterialType::ETMMT_Diffuse)
+                {
+                    printf("[DEBUG] Trace end, color is %f %f %f\n", payload.color.x, payload.color.y, payload.color.z );
+                }
+
                 return;
             }
 
@@ -131,8 +139,11 @@ namespace gdt {
 
         uint32_t u0 = optixGetPayload_0();
         uint32_t u1 = optixGetPayload_1();
-        vec3f hitLocation = (vec3f)optixGetWorldRayOrigin() + scaleVector(optixGetWorldRayDirection(),
-                                                                          optixGetRayTmax() - 0.00001f);
+        float t = optixGetRayTmax() + rayOffset;
+        // Is necessary to check t value with zero?
+        //t = t < 0.0f ?  0.0f : t;
+
+        vec3f hitLocation = (vec3f)optixGetWorldRayOrigin() + scaleVector(RayDirection, t);
 
         //float2 baryCentricesCoord = optixGetTriangleBarycentrics();
         //vec3f location =  baryCentricesCoord.x * v1 + baryCentricesCoord.y * v2 + (1 - baryCentricesCoord.x - baryCentricesCoord.y) * v0;
@@ -153,7 +164,15 @@ namespace gdt {
                    SURFACE_RAY_TYPE,             // missSBTIndex
                    u0, u1);
 
-        payload.color = (colorMul(hitParams->MeshMaterial.Diffuse, payload.color) + hitParams->MeshMaterial.Emissive) / pdf;
+        // const float cosNL = fmax(dot((gdt::vec3f)optixGetWorldRayDirection(), -normal), 0.0f);
+        // [IMPORTANT] cosNL maybe negative value if consider refract material
+        const float cosNL = fabs(dot((gdt::vec3f)optixGetWorldRayDirection(), -normal));
+        if (bDebugPixelColor)
+        {
+            printf("[DEBUG] Current Pixel Color is %f %f %f\n hitParams->MeshMaterial.Diffuse %f %f %f\n cosNL %f pdf %f\n", payload.color.x, payload.color.y, payload.color.z,
+                   hitParams->MeshMaterial.Diffuse.x, hitParams->MeshMaterial.Diffuse.y, hitParams->MeshMaterial.Diffuse.z, cosNL, pdf);
+        }
+        payload.color = (colorMul(hitParams->MeshMaterial.Diffuse, payload.color) * cosNL + hitParams->MeshMaterial.Emissive) / pdf;
     }
 
     extern "C" __global__ void __anyhit__radiance()
@@ -206,6 +225,8 @@ namespace gdt {
         // won't matter, since this value will be overwritten by either
         // the miss or hit program, anyway
         RayPayload Payload;
+        Payload.screenX = ix;
+        Payload.screenY = iy;
         Payload.RandGenerator = LCG<>((frameIndex * 21321424 * iy) ^ ix, (frameIndex * 92374894 * ix) ^ iy);
 
         //vec3f pixelColorPRD = vec3f(0.f);
@@ -228,7 +249,8 @@ namespace gdt {
                        1e20f,  // tmax
                        0.0f,   // rayTime
                        OptixVisibilityMask( 255 ),
-                       OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+                       //OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+                       OPTIX_RAY_FLAG_NONE,
                        SURFACE_RAY_TYPE,             // SBT offset
                        RAY_TYPE_COUNT,               // SBT stride
                        SURFACE_RAY_TYPE,             // missSBTIndex

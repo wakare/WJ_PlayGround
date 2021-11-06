@@ -76,7 +76,6 @@ const std::vector<TriangleMesh> OptiXTest::BuildTestScene() const
     TriangleMesh planeTop;
     planeTop.addCube({0.0f, planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
     planeTop.meshMaterial = WhiteMaterial;
-    planeTop.meshMaterial.Emissive = {0.99f, 0.99f, 0.99f};
 
     TriangleMesh planeBottom;
     planeBottom.addCube({0.0f, -planeAxisOffset, 0.0f}, {planeSize, planeHeight, planeSize});
@@ -94,6 +93,11 @@ const std::vector<TriangleMesh> OptiXTest::BuildTestScene() const
     planeBack.addCube({0.0f, 0.0f, planeAxisOffset}, {planeSize, planeSize, planeHeight});
     planeBack.meshMaterial = WhiteMaterial;
 
+    TriangleMesh LightBox;
+    LightBox.addCube({2.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f});
+    LightBox.meshMaterial = WhiteMaterial;
+    LightBox.meshMaterial.Emissive = {0.99f, 0.99f, 0.99f};
+
     TriangleMesh Box2;
     Box2.addCube(vec3f(-0.5f,-0.5f,2.0f),vec3f(2.5f,2.5f,1.0f));
     Box2.setMaterial(BlueMaterial);
@@ -103,7 +107,7 @@ const std::vector<TriangleMesh> OptiXTest::BuildTestScene() const
     ReflectSphere.setMaterial(ReflectMaterial);
 
     TriangleMesh RefractSphere;
-    RefractSphere.addSphere(vec3f(-1.0f, 2.0f, -2.0f), vec3f(1.2f, 1.2f, 1.2f), 4);
+    RefractSphere.addSphere(vec3f(1.0f, 1.0f, 0.0f), vec3f(0.5f, 0.5f, 0.5f), 8);
     RefractSphere.setMaterial(RefractMaterial);
 
     std::vector<TriangleMesh> models;
@@ -113,10 +117,50 @@ const std::vector<TriangleMesh> OptiXTest::BuildTestScene() const
     models.push_back(planeLeft);
     models.push_back(planeRight);
     models.push_back(planeBack);
+    models.push_back(LightBox);
     models.push_back(Box2);
     models.push_back(ReflectSphere);
+    models.push_back(RefractSphere);
 
     return models;
+}
+
+const std::vector<TriangleMesh> OptiXTest::BuildRefractTestScene() const {
+    // planes
+    float planeSize = 5.0f;
+    float planeAxisOffset = 0.5f * planeSize;
+    float planeHeight = 0.1f;
+
+    TriangleMesh RefractPlane;
+    //RefractPlane.addBackfaceCube({0.0f, 0.0f, -planeAxisOffset}, {planeSize, planeSize, planeHeight});
+    RefractPlane.addCube({0.0f, 0.0f, -planeAxisOffset}, {planeSize, planeSize, planeHeight});
+
+    TriangleMeshMaterial RefractMaterial;
+    RefractMaterial.Emissive = {0.0f, 0.0f, 0.0f};
+    RefractMaterial.Diffuse = {0.99f, 0.99f, 0.99f};
+    RefractMaterial.MaterialType = ETriangleMeshMaterialType::ETMMT_Refract;
+    RefractPlane.setMaterial(RefractMaterial);
+
+    TriangleMesh RefractSphere;
+    RefractSphere.addSphere({0.0f, 0.0f, 0.0f}, {4.0f, 4.0f, 4.0f}, 8);
+    RefractSphere.setMaterial(RefractMaterial);
+
+
+    // Emissive Plane
+    TriangleMesh BackFaceTestPlane;
+    BackFaceTestPlane.addBackfaceCube({0.0f, 0.0f, planeAxisOffset}, {4 * planeSize, 4 * planeSize, 4 * planeHeight});
+
+    TriangleMeshMaterial DiffuseMaterial;
+    DiffuseMaterial.Emissive = {1.0f, 1.0f, 1.0f};
+    DiffuseMaterial.Diffuse = {0.0f, 0.0f, 0.0f};
+    BackFaceTestPlane.setMaterial(DiffuseMaterial);
+
+    std::vector<TriangleMesh> models;
+    //models.push_back(RefractPlane);
+    models.push_back(RefractSphere);
+    models.push_back(BackFaceTestPlane);
+    return models;
+
 }
 
 

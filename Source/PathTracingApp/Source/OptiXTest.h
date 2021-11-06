@@ -103,6 +103,7 @@ public:
 
 private:
     const std::vector<TriangleMesh> BuildTestScene() const;
+    const std::vector<TriangleMesh> BuildRefractTestScene() const;
     SampleWindow Renderer;
     int width;
     int height;

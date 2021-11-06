@@ -49,6 +49,8 @@ namespace gdt
 
     struct RayPayload
     {
+        int screenX;
+        int screenY;
         vec3f color;
         int bounceCount;
         float pdf;
