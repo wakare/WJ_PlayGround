@@ -48,9 +48,9 @@ if (WIN32)
 		"C:/ProgramData/NVIDIA Corporation/OptiX SDK *"
 	)
 	mark_as_advanced(searched_OptiX_INSTALL_DIR)
-  set(OptiX_INSTALL_DIR ${searched_OptiX_INSTALL_DIR} CACHE PATH "Path to OptiX installed location.")
+  set(OptiX_INSTALL_DIR ${searched_OptiX_INSTALL_DIR})
 else()
-  set(OptiX_INSTALL_DIR $ENV{OptiX_INSTALL_DIR} CACHE PATH "Path to OptiX installed location.")
+  set(OptiX_INSTALL_DIR $ENV{OptiX_INSTALL_DIR})
 endif()
 # The distribution contains both 32 and 64 bit libraries.  Adjust the library
 # search path based on the bit-ness of the build.  (i.e. 64: bin64, lib64; 32:
