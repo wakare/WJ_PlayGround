@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.7)
+project(VKApp)
+
+set(CMAKE_CXX_STANDARD 11)
+
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(Vulkan REQUIRED)
+
+include_directories(Source)
+include_directories(${Vulkan_INCLUDE_DIR})
+
+add_executable(VKApp Source/VkMain.cpp)
+
+target_link_libraries(VKApp
+        ${Vulkan_LIBRARY}
+        glm::glm
+        glfw)

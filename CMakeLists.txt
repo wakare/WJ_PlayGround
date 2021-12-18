@@ -25,3 +25,5 @@ include_directories(${OptiXDeviceDir})
 add_subdirectory(${OptiXDeviceDir})
 
 add_subdirectory(Source/PathTracingApp)
+
+add_subdirectory(Source/VKApp)
