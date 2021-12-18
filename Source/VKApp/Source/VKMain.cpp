@@ -11,6 +11,7 @@
 #include <glm/mat4x4.hpp>
 
 #include <iostream>
+#include <vector>
 
 int main() {
     glfwInit();
@@ -19,9 +20,17 @@ int main() {
     GLFWwindow* window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
 
     uint32_t extensionCount = 0;
+
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
-    std::cout << extensionCount << " extensions supported\n";
+    std::cout << extensionCount << " extensions supported:\n";
+    std::vector<VkExtensionProperties> Properties(extensionCount);
+
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, Properties.data());
+    for (int i = 0; i < extensionCount; ++i)
+    {
+        std::cout << Properties[i].extensionName << std::endl;
+    }
 
     glm::mat4 matrix;
     glm::vec4 vec;
