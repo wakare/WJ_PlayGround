@@ -7,7 +7,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 
-include_directories(Source)
+include_directories(Source Shaders)
 include_directories(${Vulkan_INCLUDE_DIR})
 
 #add_executable(VKApp Source/VKQueryExtensions.cpp)
